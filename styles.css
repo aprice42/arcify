@@ -879,7 +879,7 @@ h3 {
     min-height: 0;
 }
 
-/* Picked with ⌘-click or ⇧-click; an outline, so selection doesn't rely on colour */
+/* Picked with ⌘/Ctrl-click or Shift-click; an outline, so selection doesn't rely on colour */
 .tab.selected {
     outline: 2px solid currentColor;
     outline-offset: -2px;

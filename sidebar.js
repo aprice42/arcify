@@ -1564,7 +1564,7 @@ async function unsplitRow(tabElement) {
     await refreshActiveSpaceUI();
 }
 
-// Open tabs picked with ⌘-click or ⇧-click, for joining two of them into a split.
+// Open tabs picked with ⌘/Ctrl-click or Shift-click, for joining two of them into a split.
 const selectedTabIds = new Set();
 let selectionAnchorId = null;
 
@@ -1585,6 +1585,10 @@ function clearSelection() {
     selectionAnchorId = null;
     renderSelection();
 }
+
+// ⌘-click on macOS, Ctrl-click elsewhere; on macOS Ctrl-click opens the context menu.
+const IS_MAC = /mac/i.test(navigator.userAgentData?.platform ?? navigator.platform);
+const isSelectionToggle = event => (IS_MAC ? event.metaKey : event.ctrlKey);
 
 function handleSelectionClick(event, tabElement) {
     const id = Number(tabElement.dataset.tabId);
@@ -3251,7 +3255,7 @@ async function createTabElement(tab, isPinned = false, isBookmarkOnly = false) {
             // Don't activate tab when clicking close button
             if (event.target === actionButton) return;
 
-            if ((event.metaKey || event.shiftKey) && tabElement.dataset.tabId) {
+            if ((isSelectionToggle(event) || event.shiftKey) && tabElement.dataset.tabId) {
                 handleSelectionClick(event, tabElement);
                 return;
             }
