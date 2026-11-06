@@ -3625,6 +3625,13 @@ async function handleTabRemove(tabId) {
             if (bookmark?.url) {
                 const row = await createTabElement({ id: null, title: bookmark.title,
                     url: bookmark.url, pinnedUrl: bookmark.url, bookmarkId: bookmark.id }, true, true);
+                // A pinned split half stays paired until the next full render, or a click opens only this half.
+                if (tabElement.dataset.splitFolderId) {
+                    row.dataset.splitFolderId = tabElement.dataset.splitFolderId;
+                    row.draggable = false;
+                    row.classList.add(...[...tabElement.classList].filter(name => name.startsWith('split-')));
+                    row.querySelector('.tab-details')?.append(...tabElement.querySelectorAll('.tab-details > .visually-hidden'));
+                }
                 tabElement.replaceWith(row);
             } else tabElement.remove();
         } catch { tabElement.remove(); }
