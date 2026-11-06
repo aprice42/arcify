@@ -22,9 +22,10 @@ import { EditSessionRegistry } from './edit-sessions.js';
 import { isProtectedFavorite } from './favorite-safety.js';
 import { selectWindowSpaceTabs, mergeVisibleOrder, mergeCapturedTemporaryOrder, canonicalOrderFromDisplay, saveBookmarkOperation } from './sidebar-tabs.js';
 import { ownerOf } from './space-store.js';
+import { isInSplit, pairSplits, splitRowRoles, SPLIT_PIN_BLOCKED_MESSAGE } from './split-view.js';
 import { canCreateFolder, canMoveFolder, createFolder } from './folder-policy.js';
 import { loadFolderCollapsed, saveFolderCollapsed } from './folder-state.js';
-import { FOLDER_CLOSED_ICON, FOLDER_CLOSED_DOTS_ICON, FOLDER_OPEN_ICON } from './icons.js';
+import { FOLDER_CLOSED_ICON, FOLDER_CLOSED_DOTS_ICON, FOLDER_OPEN_ICON, SPLIT_VIEW_ICON } from './icons.js';
 import { LocalStorage } from './localstorage.js';
 import { Utils } from './utils.js';
 import {
@@ -576,6 +577,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         handleTabUpdate(tabId, changeInfo, tab);
         if (tab.pinned) updatePinnedFavicons(); // Update favicons when a tab is pinned/unpinned
+        // Split rows are paired at render time, so a split or unsplit needs a re-render.
+        if (changeInfo.splitViewId !== undefined) refreshCoordinator.invalidateView();
     });
     chrome.tabs.onRemoved.addListener(handleTabRemove);
     const refreshWindowTabs = async (_tabId, info) => {
@@ -1755,6 +1758,7 @@ async function handleBookmarkOperations(event, draggingElement, container, targe
                 Logger.error(`Tab not found for ID: ${tabId}`);
                 return;
             }
+            if (!draggingElement.dataset.bookmarkId && isInSplit(tab)) throw new Error(SPLIT_PIN_BLOCKED_MESSAGE);
 
             // Determine the target folder
             const targetFolderElement = targetFolder ? targetFolder.closest('.folder') : null;
@@ -2357,6 +2361,34 @@ async function loadTabs(space, pinnedContainer, tempContainer) {
     finally { if (spaceRenderTasks.get(space.id) === run) spaceRenderTasks.delete(space.id); }
 }
 
+const SPLIT_ROW_LABELS = { left: 'Split view, left side', right: 'Split view, right side', alone: 'In a split view' };
+
+// Adjacent halves of a split share one line; a half shown without its partner gets an icon.
+// Favorites are never reordered for this, so pinned halves only pair when already adjacent.
+function markSplitRows(root) {
+    for (const container of [root, ...root.querySelectorAll('.folder-content')]) {
+        const rows = [...container.children];
+        const roles = splitRowRoles(rows.map(row =>
+            row.classList.contains('tab') && row.dataset.splitViewId ? Number(row.dataset.splitViewId) : undefined));
+        rows.forEach((row, i) => {
+            const role = roles[i];
+            if (!role) return;
+            row.classList.add(`split-${role}`);
+            const label = document.createElement('span');
+            label.className = 'visually-hidden';
+            label.textContent = SPLIT_ROW_LABELS[role];
+            row.querySelector('.tab-details')?.appendChild(label);
+            if (role === 'alone') {
+                const icon = document.createElement('span');
+                icon.className = 'tab-split-indicator';
+                icon.setAttribute('aria-hidden', 'true');
+                icon.innerHTML = SPLIT_VIEW_ICON;
+                row.querySelector('.tab-details')?.after(icon);
+            }
+        });
+    }
+}
+
 async function renderSpaceTabs(space, pinnedContainer, tempContainer) {
     Logger.log('Loading tabs for space:', space.id);
     Logger.log('Space bookmarks in space:', space.spaceBookmarks);
@@ -2536,7 +2568,8 @@ async function renderSpaceTabs(space, pinnedContainer, tempContainer) {
     const temporaryTabIds = [...new Set([...space.temporaryTabs, ...unrepresentedBookmarkIds])]
         .filter(id => !fallbackFavoriteIds.includes(id));
     if (invertTabOrder) temporaryTabIds.reverse();
-    const tabsToLoad = [...new Set([...fallbackFavoriteIds, ...temporaryTabIds])];
+    const pairedTemporaryTabIds = pairSplits(temporaryTabIds, new Map(tabs.map(tab => [tab.id, tab])));
+    const tabsToLoad = [...new Set([...fallbackFavoriteIds, ...pairedTemporaryTabIds])];
     for (const tabId of tabsToLoad) {
         const tab = tabs.find(t => t.id === tabId);
         if (!tab || representedPinnedTabIds.has(tabId)) continue;
@@ -2573,6 +2606,8 @@ async function renderSpaceTabs(space, pinnedContainer, tempContainer) {
         disposeEditorsInElement(el);
         el.remove();
     });
+    markSplitRows(pinnedFragment);
+    markSplitRows(tempFragment);
     pinnedContainer.appendChild(pinnedFragment);
     tempContainer.appendChild(tempFragment);
     const spaceElement = pinnedContainer.closest('.space');
@@ -2668,6 +2703,7 @@ async function createTabElement(tab, isPinned = false, isBookmarkOnly = false) {
     } else {
         tabElement.dataset.tabId = tab.id;
         tabElement.dataset.url = tab.url;
+        if (isInSplit(tab)) tabElement.dataset.splitViewId = tab.splitViewId;
         if (tab.active) {
             tabElement.classList.add('active');
         }
