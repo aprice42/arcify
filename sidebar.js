@@ -23,8 +23,7 @@ import { isProtectedFavorite } from './favorite-safety.js';
 import { selectWindowSpaceTabs, mergeVisibleOrder, mergeCapturedTemporaryOrder, canonicalOrderFromDisplay, saveBookmarkOperation } from './sidebar-tabs.js';
 import { ownerOf } from './space-store.js';
 import {
-    isInSplit, pairSplits, splitRowRoles, canCreateSplit, isSplitFolder, splitFolderTitle, ensureSplit,
-    SPLIT_PIN_BLOCKED_MESSAGE
+    isInSplit, pairSplits, splitRowRoles, canCreateSplit, isSplitFolder, splitFolderTitle, ensureSplit
 } from './split-view.js';
 import { canCreateFolder, canMoveFolder, createFolder } from './folder-policy.js';
 import { loadFolderCollapsed, saveFolderCollapsed } from './folder-state.js';
@@ -1240,11 +1239,11 @@ function setupTabDragHandlers(tabElement) {
 }
 
 // Folders drag from their header and move as one bookmark.
-function setupFolderDragHandlers(folderElement) {
-    const folderHeader = folderElement.querySelector(':scope > .folder-header');
-    folderHeader.addEventListener('dragstart', event => {
-        if (event.target !== folderHeader) return;
-        if (folderHeader.querySelector('.folder-name') === document.activeElement) {
+// The handle is the folder header, or a pinned split's whole row.
+function setupFolderDragHandlers(folderElement, handle = folderElement.querySelector(':scope > .folder-header')) {
+    handle.addEventListener('dragstart', event => {
+        if (event.target !== handle) return;
+        if (handle.querySelector('.folder-name') === document.activeElement) {
             event.preventDefault();
             return;
         }
@@ -1255,7 +1254,7 @@ function setupFolderDragHandlers(folderElement) {
         dragSourceFolderElement = folderElement.parentElement.closest('.folder');
     });
 
-    folderHeader.addEventListener('dragend', () => {
+    handle.addEventListener('dragend', () => {
         isDraggingTab = false;
         folderElement.classList.remove('dragging');
         dragSourceFolderElement = null;
@@ -1461,14 +1460,20 @@ async function moveTabToPinned(space, tab) {
     await refreshActiveSpaceUI();
 }
 
-// A split is pinned whole, as in Arc: both halves go into one split folder.
-async function pinSplit(space, tab) {
+// The two tabs of tab's split, left first; both must belong to space.
+async function getSplitHalves(tab, space) {
     const halves = (await chrome.tabs.query({ windowId: tab.windowId }))
         .filter(t => t.splitViewId === tab.splitViewId)
         .sort((a, b) => a.index - b.index);
     if (halves.length !== 2 || halves.some(half => ownerOf(spaces, half.id)?.id !== space.id)) {
         throw new Error('Both sides of a split view must be in this space to pin it.');
     }
+    return halves;
+}
+
+// A split is pinned whole, as in Arc: both halves go into one split folder.
+async function pinSplit(space, tab) {
+    const halves = await getSplitHalves(tab, space);
     const spaceFolder = await getSpaceBookmarkFolder(space);
     const bindings = await Utils.getPinnedTabStates();
     const folder = await chrome.bookmarks.create({
@@ -1882,7 +1887,17 @@ async function handleBookmarkOperations(event, draggingElement, container, targe
                 Logger.error(`Tab not found for ID: ${tabId}`);
                 return;
             }
-            if (!draggingElement.dataset.bookmarkId && isInSplit(tab)) throw new Error(SPLIT_PIN_BLOCKED_MESSAGE);
+            let splitHalves = null;
+            if (!draggingElement.dataset.bookmarkId && isInSplit(tab)) {
+                splitHalves = await getSplitHalves(tab, space);
+                const bindings = await Utils.getPinnedTabStates();
+                // The other half is already a favorite; pinSplit moves its bookmark in instead of duplicating it.
+                if (splitHalves.some(half => bindings[half.id]?.bookmarkId)) {
+                    await pinSplit(space, tab);
+                    await persistSpaceTabOrder(space.id);
+                    return { orderHandled: true };
+                }
+            }
 
             // Determine the target folder
             const targetFolderElement = targetFolder ? targetFolder.closest('.folder') : null;
@@ -1899,9 +1914,21 @@ async function handleBookmarkOperations(event, draggingElement, container, targe
                 targetContent: dropIntent.bookmarkTargetContent,
                 draggingElement,
                 rootId: spaceFolder.id,
-                tab
+                tab,
+                splitHalves
             });
             const result = await saveBookmarkOperation(operation);
+            if (splitHalves) {
+                for (const [id, order] of Object.entries(result.orders || {})) bookmarkOrderBaselines.set(String(id), order.map(String));
+                for (const [index, half] of splitHalves.entries()) {
+                    await Utils.setPinnedTabState(half.id, { bookmarkId: result.createdChildIds[index], pinnedUrl: half.url });
+                    space.temporaryTabs = space.temporaryTabs.filter(id => id !== half.id);
+                    if (!space.spaceBookmarks.includes(half.id)) space.spaceBookmarks.push(half.id);
+                }
+                await persistSpaceTabOrder(space.id);
+                updatePinnedSectionPlaceholders();
+                return { orderHandled: true };
+            }
             bookmarkId = result.createdId || bookmarkId;
             for (const [id, order] of Object.entries(result.orders || {})) bookmarkOrderBaselines.set(String(id), order.map(String));
             draggingElement.dataset.bookmarkId = bookmarkId;
@@ -2032,7 +2059,7 @@ function bookmarkParentIdForContent(content, rootId) {
     return String(content.closest('.folder')?.dataset.bookmarkId || rootId);
 }
 
-function makeBookmarkDropOperation({ sourceContent, targetContent, draggingElement, rootId, tab }) {
+function makeBookmarkDropOperation({ sourceContent, targetContent, draggingElement, rootId, tab, splitHalves = null }) {
     const bookmarkId = draggingElement.dataset.bookmarkId || null;
     const sourceParentId = bookmarkId ? bookmarkParentIdForContent(sourceContent, rootId) : null;
     const targetParentId = bookmarkParentIdForContent(targetContent, rootId);
@@ -2046,7 +2073,12 @@ function makeBookmarkDropOperation({ sourceContent, targetContent, draggingEleme
         return { parentId, expectedCanonicalIds: [...expectedCanonicalIds], desiredCanonicalIds };
     });
     let relocation = null;
-    if (!bookmarkId) {
+    if (!bookmarkId && splitHalves) {
+        relocation = {
+            kind: 'createSplit', parentId: targetParentId, title: splitFolderTitle(splitHalves[0].title, splitHalves[1].title),
+            children: splitHalves.map(half => ({ title: half.title, url: half.url }))
+        };
+    } else if (!bookmarkId) {
         relocation = { kind: 'create', parentId: targetParentId, title: tab.title, url: draggingElement.dataset.pinnedUrl || tab.url };
     } else if (sourceParentId !== targetParentId) {
         relocation = { kind: 'move', bookmarkId, parentId: targetParentId };
@@ -2549,10 +2581,13 @@ async function renderSpaceTabs(space, pinnedContainer, tempContainer) {
                         splitContent.classList.remove('collapsed');
                         container.appendChild(splitElement);
                         await processBookmarkNode(item, splitContent);
+                        // Halves aren't draggable, so a drag from either one picks up the whole row.
                         splitContent.querySelectorAll(':scope > .tab').forEach(row => {
                             row.dataset.splitFolderId = item.id;
                             row.draggable = false;
                         });
+                        splitElement.draggable = true;
+                        setupFolderDragHandlers(splitElement, splitElement);
                         continue;
                     }
                     if (!item.url) {

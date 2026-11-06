@@ -2,9 +2,6 @@
 // leave it undefined, which every helper here treats as "not split".
 export const SPLIT_VIEW_ID_NONE = -1;
 
-// A split is pinned whole or not at all, as in Arc; dragging pins one tab, so it is refused.
-export const SPLIT_PIN_BLOCKED_MESSAGE = 'To pin a split view, use Pin Tab. It pins both sides together.';
-
 export function isInSplit(tab) {
     return Number.isInteger(tab?.splitViewId) && tab.splitViewId !== SPLIT_VIEW_ID_NONE;
 }
