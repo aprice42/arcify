@@ -199,7 +199,7 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
 
     // --- Menu Items ---
 
-    // Split view actions, only offered when Chrome can create splits.
+    // splitActions is null when Chrome can't create splits.
     const runSplitAction = action => async () => {
         contextMenu.remove();
         try {
@@ -216,7 +216,6 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
             splitOption.textContent = 'Split View';
             splitOption.addEventListener('click', runSplitAction(splitActions.onSplitSelected));
         } else {
-            // Chrome splits hold exactly two tabs.
             splitOption.textContent = 'Split View (select 2 tabs)';
             splitOption.classList.add('disabled');
             splitOption.setAttribute('aria-disabled', 'true');
