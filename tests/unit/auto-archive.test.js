@@ -44,7 +44,7 @@ function startBackground() {
     runInNewContext(source, {
         chrome, console, setTimeout, clearTimeout,
         registerTourMessages() {}, registerBookmarkListeners() {},
-        enqueueBookmarkOperation: async () => ({}), copyCurrentTabUrlWithFallback: async () => {},
+        enqueueBookmarkOperation: async () => ({}), copyCurrentTabUrlWithFallback: async () => {}, duplicateTab: async () => null,
         SpaceStore, ownerOf, isProtectedFavorite, visibleSplitIds, moveSplitOffFavorite, SPLIT_JOIN_KEY, Utils, Logger
     });
     return () => Promise.all(chrome.alarms.onAlarm.listeners.map(fn => fn({ name: 'autoArchiveTabsAlarm' })));

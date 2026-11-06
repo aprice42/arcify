@@ -19,6 +19,7 @@ import { visibleSplitIds } from './split-view.js';
 import { moveSplitOffFavorite, SPLIT_JOIN_KEY } from './split-from-favorite.js';
 import { registerBookmarkListeners } from './bookmark-events.js';
 import { enqueueBookmarkOperation } from './bookmark-writer.js';
+import { duplicateTab } from './tab-duplicate.js';
 
 registerBookmarkListeners();
 
@@ -102,11 +103,16 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     // Forward the pin toggle command to the sidebar
     if (request.command === "toggleSpacePin") {
         chrome.runtime.sendMessage({ command: "toggleSpacePin", tabId: request.tabId });
+    } else if (request.command === "duplicateTab" && request.tabId) {
+        duplicateTab(request.tabId, message => spaceStore.dispatch(message))
+            .catch(error => Logger.error('Duplicate tab failed:', error));
     }
 });
 
-chrome.commands.onCommand.addListener(async function (command) {
-    if (command === "quickPinToggle") {
+chrome.commands.onCommand.addListener(async function (command, tab) {
+    if (command === "duplicateTab") {
+        if (tab?.id) await duplicateTab(tab.id, message => spaceStore.dispatch(message));
+    } else if (command === "quickPinToggle") {
         // Send a message to the sidebar
         chrome.runtime.sendMessage({ command: "quickPinToggle" });
     } else if (command === "NextTabInSpace") {

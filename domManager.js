@@ -250,6 +250,15 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
         });
         contextMenu.appendChild(pinInSpaceOption);
 
+        const duplicateOption = document.createElement('div');
+        duplicateOption.className = 'context-menu-item';
+        duplicateOption.textContent = 'Duplicate Tab';
+        duplicateOption.addEventListener('click', () => {
+            chrome.runtime.sendMessage({ command: 'duplicateTab', tabId: tab.id });
+            contextMenu.remove();
+        });
+        contextMenu.appendChild(duplicateOption);
+
         // Arc-like: allow updating the underlying space bookmark URL to the current tab URL.
         if (isPinned && typeof onReplaceBookmarkUrlWithCurrent === 'function') {
             const replaceBookmarkUrlOption = document.createElement('div');
