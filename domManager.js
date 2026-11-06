@@ -260,7 +260,7 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
 
         const duplicateOption = document.createElement('div');
         duplicateOption.className = 'context-menu-item';
-        duplicateOption.textContent = 'Duplicate Tab';
+        duplicateOption.textContent = splitActions?.inLiveSplit ? 'Duplicate Split View' : 'Duplicate Tab';
         duplicateOption.addEventListener('click', () => {
             chrome.runtime.sendMessage({ command: 'duplicateTab', tabId: tab.id });
             contextMenu.remove();
