@@ -70,6 +70,12 @@
     },
     "copyCurrentUrl": {
       "description": "Copy current tab URL"
+    },
+    "duplicateTab": {
+      "suggested_key": {
+        "default": "Alt+Shift+D"
+      },
+      "description": "Duplicate current tab"
     }
   },
   "options_page": "options.html"
