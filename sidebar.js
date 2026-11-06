@@ -3833,6 +3833,8 @@ async function createTabElement(tab, isPinned = false, isBookmarkOnly = false) {
         const splitActions = canCreateSplit() ? {
             onUnsplit: tabElement.dataset.splitFolderId || tabElement.dataset.splitViewId ? () => unsplitRow(tabElement) : null,
             onRename: splitLeftRow ? () => renameSplit(splitLeftRow) : null,
+            // Duplicate copies a whole split only while Chrome has the tab split.
+            inLiveSplit: Boolean(tabElement.dataset.splitViewId),
             selectedCount: tabIds.length,
             onSplitSelected: tabIds.length === 2 ? () => splitSelectedTabs(tabIds) : null,
             onNewSplit: !isBookmarkOnly && tabIds.length === 1 && !tabElement.dataset.splitViewId && !tabElement.dataset.splitFolderId
