@@ -1272,6 +1272,8 @@ function getDropTargetFolderContent(target, draggingElement) {
 }
 
 function isInvalidFolderDrop(draggingElement, container, targetContainer) {
+    // A pinned split dropped among unpinned tabs unpins it, as in Arc.
+    if (draggingElement.classList.contains('split-folder') && container.dataset.tabType === 'temporary') return false;
     return draggingElement.classList.contains('folder') &&
         (container.dataset.tabType !== 'pinned' || draggingElement.contains(targetContainer));
 }
@@ -1501,7 +1503,7 @@ async function getSplitFolderOf(bookmarkId) {
 }
 
 // Unpinning either half unpins the split: the folder goes and live halves become temporary.
-async function unpinSplit(space, folder) {
+async function unpinSplit(space, folder, { temporaryDisplayOrder = null, inverted = false } = {}) {
     space = spaces.find(s => s.id === space.id);
     if (!space) return;
     const bindings = await Utils.getPinnedTabStates();
@@ -1517,6 +1519,9 @@ async function unpinSplit(space, folder) {
         space.spaceBookmarks = space.spaceBookmarks.filter(id => id !== tabId);
         if (!space.temporaryTabs.includes(tabId)) space.temporaryTabs.push(tabId);
         await Utils.removePinnedTabState(tabId);
+    }
+    if (temporaryDisplayOrder) {
+        space.temporaryTabs = mergeCapturedTemporaryOrder(space.temporaryTabs, temporaryDisplayOrder, inverted);
     }
     showUndoToast('Pinned split removed.', async () => {
         const siblings = await chrome.bookmarks.getChildren(folder.parentId);
@@ -1812,6 +1817,15 @@ async function handleBookmarkOperations(event, draggingElement, container, targe
     if (!draggingElement || !container || !event) {
         Logger.warn('Missing required elements for bookmark operations');
         return;
+    }
+
+    if (draggingElement.classList.contains('split-folder') && container.dataset.tabType === 'temporary') {
+        const space = spaces.find(s => s.id === container.closest('.space')?.dataset.spaceId);
+        const [folder] = await chrome.bookmarks.getSubTree(draggingElement.dataset.bookmarkId);
+        // The re-render only clears tab rows from this section, so the folder shell must go here.
+        draggingElement.remove();
+        if (space && folder) await unpinSplit(space, folder, dropIntent);
+        return { orderHandled: true };
     }
 
     if (draggingElement.classList.contains('folder')) {
