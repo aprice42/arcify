@@ -2967,6 +2967,12 @@ async function closeTab(tabElement, tab, isPinned = false, isBookmarkOnly = fals
         if (space && folder) await unpinSplit(space, folder);
         return;
     }
+    const liveTab = isBookmarkOnly ? null : await chrome.tabs.get(tab.id).catch(() => null);
+    if (isInSplit(liveTab)) {
+        const halves = (await chrome.tabs.query({ windowId: liveTab.windowId })).filter(t => t.splitViewId === liveTab.splitViewId);
+        await chrome.tabs.remove(halves.map(t => t.id));
+        return;
+    }
 
     if (isBookmarkOnly) {
         const space = spaces.find(s => s.id === tabElement.closest('.space')?.dataset.spaceId);
@@ -4013,6 +4019,16 @@ async function moveTabToSpace(tabId, spaceId, pinned = false, openerTabId = null
         }
     }
 
+    // Both halves of a split belong to one space.
+    const movedTab = await chrome.tabs.get(tabId).catch(() => null);
+    if (isInSplit(movedTab)) {
+        const partner = (await chrome.tabs.query({ windowId: movedTab.windowId }))
+            .find(t => t.splitViewId === movedTab.splitViewId && t.id !== tabId);
+        if (partner && !processingTabMoves.has(partner.id) && ownerOf(spaces, partner.id)?.id !== spaceId) {
+            await moveTabToSpace(partner.id, spaceId, pinned);
+        }
+    }
+
     // 5. Save the updated spaces to storage
     saveSpaces();
     } finally {
@@ -4033,6 +4049,16 @@ async function moveFavoriteToSpace(tab, tabElement, spaceId) {
     const bookmark = await getSpaceBookmarkById(source, tabElement.dataset.bookmarkId || binding?.bookmarkId);
     if (!bookmark) throw new Error('The favorite binding is no longer valid for this space.');
     const targetFolder = await getSpaceBookmarkFolder(target);
+    const splitFolder = await getSplitFolderOf(bookmark.id);
+    if (splitFolder) {
+        // A pinned split moves whole, with every open tab of either half.
+        const boundIds = [];
+        for (const child of splitFolder.children) boundIds.push(...await getTabsBoundToBookmark(source, child.id));
+        await chrome.bookmarks.move(splitFolder.id, { parentId: targetFolder.id });
+        for (const id of boundIds) await moveTabToSpace(id, target.id, true);
+        scheduleBookmarkRefresh();
+        return;
+    }
     const boundTabIds = (await getTabsBoundToBookmark(source, bookmark.id)).filter(id => id !== tab.id);
     await chrome.bookmarks.move(bookmark.id, { parentId: targetFolder.id });
     if (tab.id) {
