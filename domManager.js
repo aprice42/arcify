@@ -183,7 +183,7 @@ export function activateSpaceInDOM(spaceId, spaces, updateSpaceSwitcher) {
     updateSpaceSwitcher();
 }
 
-export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabElement, closeTab, spaces, moveTabToSpace, setActiveSpace, allBookmarkSpaceFolders, createSpaceFromInactive, onReplaceBookmarkUrlWithCurrent = null, moveFavoriteToSpace = null) {
+export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabElement, closeTab, spaces, moveTabToSpace, setActiveSpace, allBookmarkSpaceFolders, createSpaceFromInactive, onReplaceBookmarkUrlWithCurrent = null, moveFavoriteToSpace = null, splitActions = null) {
     // Remove any existing context menus
     const existingMenu = document.getElementById('tab-context-menu');
     if (existingMenu) {
@@ -198,6 +198,38 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
     contextMenu.style.top = `${y}px`;
 
     // --- Menu Items ---
+
+    // Split view actions, only offered when Chrome can create splits.
+    const runSplitAction = action => async () => {
+        contextMenu.remove();
+        try {
+            await action();
+        } catch (error) {
+            Logger.error('[ContextMenu] Split action failed:', error);
+            alert(error.message);
+        }
+    };
+    if (splitActions?.selectedCount >= 2) {
+        const splitOption = document.createElement('div');
+        splitOption.className = 'context-menu-item';
+        if (splitActions.onSplitSelected) {
+            splitOption.textContent = 'Split View';
+            splitOption.addEventListener('click', runSplitAction(splitActions.onSplitSelected));
+        } else {
+            // Chrome splits hold exactly two tabs.
+            splitOption.textContent = 'Split View (select 2 tabs)';
+            splitOption.classList.add('disabled');
+            splitOption.setAttribute('aria-disabled', 'true');
+        }
+        contextMenu.appendChild(splitOption);
+    }
+    if (splitActions?.onUnsplit) {
+        const unsplitOption = document.createElement('div');
+        unsplitOption.className = 'context-menu-item';
+        unsplitOption.textContent = 'Unsplit';
+        unsplitOption.addEventListener('click', runSplitAction(splitActions.onUnsplit));
+        contextMenu.appendChild(unsplitOption);
+    }
 
     // Only show these options for actual tabs that are part of a space
     if (!isBookmarkOnly) {

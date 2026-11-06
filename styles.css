@@ -879,6 +879,18 @@ h3 {
     min-height: 0;
 }
 
+/* Picked with ⌘-click or ⇧-click; an outline, so selection doesn't rely on colour */
+.tab.selected {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+}
+
+.context-menu-item.disabled {
+    opacity: 0.5;
+    cursor: default;
+    pointer-events: none;
+}
+
 /* Marks a split half shown without its partner beside it */
 .tab-split-indicator {
     display: inline-flex;
