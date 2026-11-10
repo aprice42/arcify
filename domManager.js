@@ -314,30 +314,20 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
             moveToSpaceItem.addEventListener('mouseenter', () => {
                 // Wait for next frame to ensure submenu is rendered
                 requestAnimationFrame(() => {
-                    const submenuRect = submenu.getBoundingClientRect();
+                    const margin = 4;
                     const parentRect = moveToSpaceItem.getBoundingClientRect();
-                    const viewportWidth = window.innerWidth;
-                    const viewportHeight = window.innerHeight;
+                    const { width, height } = submenu.getBoundingClientRect();
 
-                    // Reset any previous adjustments
-                    submenu.style.left = '';
-                    submenu.style.right = '';
-                    submenu.style.top = '';
-                    submenu.style.bottom = '';
+                    // Prefer the right, then the left; a sidebar too narrow for either gets the
+                    // submenu over the main menu, so it is never cut off.
+                    let left = parentRect.right;
+                    if (left + width > window.innerWidth - margin) left = parentRect.left - width;
+                    left = Math.max(margin, Math.min(left, window.innerWidth - margin - width));
+                    const top = Math.max(margin, Math.min(parentRect.top - 5, window.innerHeight - margin - height));
 
-                    // Check if submenu overflows right edge
-                    if (parentRect.right + submenuRect.width > viewportWidth) {
-                        // Position to the left of parent instead
-                        submenu.style.left = 'auto';
-                        submenu.style.right = '100%';
-                    }
-
-                    // Check if submenu overflows bottom edge
-                    if (parentRect.top + submenuRect.height > viewportHeight) {
-                        // Align to bottom instead of top
-                        submenu.style.top = 'auto';
-                        submenu.style.bottom = '0';
-                    }
+                    // The submenu is positioned inside the menu item, so convert to its coordinates.
+                    submenu.style.left = `${left - parentRect.left}px`;
+                    submenu.style.top = `${top - parentRect.top}px`;
                 });
             });
         }
