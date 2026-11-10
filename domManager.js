@@ -183,12 +183,13 @@ export function activateSpaceInDOM(spaceId, spaces, updateSpaceSwitcher) {
     updateSpaceSwitcher();
 }
 
+// Tab and folder menus are built separately, so each must clear the other's.
+export function closeContextMenus() {
+    document.querySelectorAll('body > .context-menu').forEach(menu => menu.remove());
+}
+
 export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabElement, closeTab, spaces, moveTabToSpace, setActiveSpace, allBookmarkSpaceFolders, createSpaceFromInactive, onReplaceBookmarkUrlWithCurrent = null, moveFavoriteToSpace = null) {
-    // Remove any existing context menus
-    const existingMenu = document.getElementById('tab-context-menu');
-    if (existingMenu) {
-        existingMenu.remove();
-    }
+    closeContextMenus();
 
     const contextMenu = document.createElement('div');
     contextMenu.id = 'tab-context-menu';

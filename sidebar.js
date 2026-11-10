@@ -46,7 +46,8 @@ import {
     showDropIndicator,
     getDropPosition,
     handleEmptyContainerDrop,
-    showUndoToast
+    showUndoToast,
+    closeContextMenus
 } from './domManager.js';
 import { BookmarkUtils } from './bookmark-utils.js';
 import { Logger } from './logger.js';
@@ -3075,6 +3076,8 @@ async function createTabElement(tab, isPinned = false, isBookmarkOnly = false) {
     // --- Context Menu ---
     tabElement.addEventListener('contextmenu', async (e) => {
         e.preventDefault();
+        // Keep a tab inside a folder from also opening the folder's menu.
+        e.stopPropagation();
         const arcifyFolder = await LocalStorage.getOrCreateArcifyFolder();
         const allBookmarkSpaceFolders = await chrome.bookmarks.getChildren(arcifyFolder.id);
         showTabContextMenu(
@@ -3766,6 +3769,7 @@ function setupFolderContextMenu(folderElement, space, item = null) {
         });
 
         contextMenu.appendChild(deleteOption);
+        closeContextMenus();
         document.body.appendChild(contextMenu);
 
         // Close context menu when clicking outside
