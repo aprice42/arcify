@@ -50,7 +50,8 @@ import {
     showDropIndicator,
     getDropPosition,
     handleEmptyContainerDrop,
-    showUndoToast
+    showUndoToast,
+    closeContextMenus
 } from './domManager.js';
 import { BookmarkUtils } from './bookmark-utils.js';
 import { Logger } from './logger.js';
@@ -3432,6 +3433,8 @@ async function createTabElement(tab, isPinned = false, isBookmarkOnly = false) {
     // --- Context Menu ---
     tabElement.addEventListener('contextmenu', async (e) => {
         e.preventDefault();
+        // Keep a tab inside a folder from also opening the folder's menu.
+        e.stopPropagation();
         // Right-clicking outside the selection acts on that tab alone.
         if (!selectedTabIds.has(Number(tabElement.dataset.tabId))) clearSelection();
         // Rows carry their split state from the last render; no extra lookup, so the menu opens as fast as before.
@@ -4159,6 +4162,7 @@ function setupFolderContextMenu(folderElement, space, item = null) {
         });
 
         contextMenu.appendChild(deleteOption);
+        closeContextMenus();
         document.body.appendChild(contextMenu);
 
         // Close context menu when clicking outside
