@@ -879,6 +879,41 @@ h3 {
     min-height: 0;
 }
 
+/* A named split is one row: both favicons and the name. Renaming uses the same full-width row. */
+.tab.split-left.split-named:has(+ .tab.split-right),
+.tab.split-left.split-renaming:has(+ .tab.split-right) {
+    width: 100%;
+    margin-right: 0;
+}
+
+.tab.split-named + .tab.split-right,
+.tab.split-renaming + .tab.split-right,
+.tab.split-named .tab-title-display,
+.tab.split-named .tab-domain-display,
+.tab.split-renaming .tab-title-display,
+.tab.split-renaming .tab-domain-display,
+.tab.split-renaming .tab-split-name {
+    display: none !important;
+}
+
+/* The hidden right half may be the active tab */
+.tab.split-named:has(+ .tab.split-right.active) {
+    background-color: #ECEFF1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tab-split-partner-icon {
+    width: 16px;
+    height: 16px;
+    margin: 0 8px 0 -4px;
+}
+
+.tab-split-name {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 /* Picked with ⌘/Ctrl-click or Shift-click; an outline, so selection doesn't rely on colour */
 .tab.selected {
     outline: 2px solid currentColor;
@@ -2031,6 +2066,15 @@ h3 {
 
     .tab.active .tab-title-display,
     .tab.active .tab-title-input {
+        color: #000000;
+    }
+
+    .tab-split-name {
+        color: #ECEFF1;
+    }
+
+    .tab.active .tab-split-name,
+    .tab.split-named:has(+ .tab.split-right.active) .tab-split-name {
         color: #000000;
     }
 
