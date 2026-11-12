@@ -133,6 +133,9 @@ chrome.commands.onCommand.addListener(async function (command, tab) {
         chrome.runtime.sendMessage({ command: "PrevTabInSpace" });
     } else if (command === "copyCurrentUrl") {
         await copyCurrentTabUrlWithFallback();
+    } else if (command === "renameTab") {
+        // Renaming happens in the sidebar; nothing to do while it is closed.
+        chrome.runtime.sendMessage({ command: "renameTab" }).catch(() => {});
     }
 });
 
