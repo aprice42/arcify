@@ -609,6 +609,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (info.windowId === currentWindow?.id) updatePinnedFavicons();
     });
     chrome.tabs.onActivated.addListener(handleTabActivated);
+    chrome.runtime.onMessage.addListener(message => {
+        if (message?.command === 'renameTab') renameActiveRow();
+    });
     // Setup Quick Pin listener
     setupQuickPinListener(moveTabToSpace, moveTabToPinned, moveTabToTemp, activeSpaceId, setActiveSpace, activatePinnedTabByURL);
 
@@ -2701,6 +2704,24 @@ function showSplitName(row, partner, name) {
     }, { capture: true });
 }
 
+// The row that stands for a split pair, or null when row isn't shown beside its partner.
+function splitLeftRowOf(row) {
+    if (row.classList.contains('split-right')) return row.previousElementSibling;
+    return row.classList.contains('split-left') ? row : null;
+}
+
+// The Rename shortcut renames the active tab, or its split as a whole.
+async function renameActiveRow() {
+    const [tab] = await chrome.tabs.query({ active: true, windowId: currentWindow.id });
+    const row = tab && document.querySelector(`.space.active .tab[data-tab-id="${tab.id}"]`);
+    if (!row) return;
+    // Focus is usually in the page; the field needs it to take typing.
+    window.focus();
+    const splitRow = splitLeftRowOf(row);
+    if (splitRow) renameSplit(splitRow);
+    else row.querySelector('.tab-details')?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+}
+
 // Names a split as a whole; an empty name goes back to showing both halves.
 function renameSplit(row) {
     const folderId = row.closest('.split-folder')?.dataset.bookmarkId;
@@ -3537,8 +3558,7 @@ async function createTabElement(tab, isPinned = false, isBookmarkOnly = false) {
         // Right-clicking outside the selection acts on that tab alone.
         if (!selectedTabIds.has(Number(tabElement.dataset.tabId))) clearSelection();
         // Rows carry their split state from the last render; no extra lookup, so the menu opens as fast as before.
-        const splitLeftRow = tabElement.classList.contains('split-right') ? tabElement.previousElementSibling
-            : tabElement.classList.contains('split-left') ? tabElement : null;
+        const splitLeftRow = splitLeftRowOf(tabElement);
         const splitActions = canCreateSplit() ? {
             onUnsplit: tabElement.dataset.splitFolderId || tabElement.dataset.splitViewId ? () => unsplitRow(tabElement) : null,
             onRename: splitLeftRow ? () => renameSplit(splitLeftRow) : null,
