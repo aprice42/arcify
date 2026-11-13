@@ -1,11 +1,12 @@
 import { ICON_SET } from './icon-set.js';
 
-// Arc-style folder icon on a 24-unit grid: a tinted folder with an outline, which tips its front
-// flap forward when open. A custom icon is fitted inside with FIT_PADDING to spare.
-export const FOLDER_PX = 24;
-const OUTLINE = 1.4;
-const FIT_PADDING = 0.5;
-const ICON_LINE_PX = 1.1;
+// Arc-style folder icon drawn on a 24-unit grid: a tinted folder with an outline, which tips its
+// front flap forward when open. A custom icon is fitted inside with FIT_PADDING_PX to spare.
+export const FOLDER_PX = 23;
+const UNITS_PER_PX = 24 / FOLDER_PX;
+const OUTLINE = 1 * UNITS_PER_PX;
+const FIT_PADDING = 0.5 * UNITS_PER_PX;
+const ICON_LINE_PX = 1.2;
 const FLAP_SLANT = -10;
 const DOT_RADIUS = 1.2;
 
@@ -41,9 +42,9 @@ export function folderGlyphSvg({ open, hasOpenTabs = false, icon = null }) {
         inner = `<text x="0" y="0" font-size="${round(size * 0.95)}" text-anchor="middle" dominant-baseline="central">${escapeText(icon.emoji)}</text>`;
     } else if (ICON_SET[icon?.name]) {
         // Lucide draws on 24 units; scale it to the box and keep its line a fixed screen width.
-        const line = ICON_LINE_PX / size * 24;
+        const line = ICON_LINE_PX / (size / UNITS_PER_PX) * 24;
         inner = `<g class="folder-inner" stroke-width="${round(line)}" transform="translate(${round(-size / 2)} ${round(-size / 2)}) scale(${round(size / 24)})">${ICON_SET[icon.name]}</g>`;
     }
-    return `<svg class="folder-glyph" viewBox="0 0 24 24" width="${FOLDER_PX}" height="${FOLDER_PX}" stroke-width="${OUTLINE}" aria-hidden="true">`
+    return `<svg class="folder-glyph" viewBox="0 0 24 24" width="${FOLDER_PX}" height="${FOLDER_PX}" stroke-width="${round(OUTLINE)}" aria-hidden="true">`
         + `<g class="folder-shape">${open ? OPEN : CLOSED}</g>${inner ? `<g transform="${place}">${inner}</g>` : ''}</svg>`;
 }
