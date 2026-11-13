@@ -25,8 +25,13 @@ Tabs in a Chrome split view appear side by side on one row and act as a pair. Cr
 - **Pin:** **Pin Tab**, Alt+D, or dragging either side into the pinned section pins both. Clicking a pinned split reopens both sides as a split.
 - **Splitting from a pinned tab:** opening a link beside a pinned tab leaves the pinned tab alone; a copy of it and the link open as a new split at the top of your temporary tabs.
 - **Close, archive and move:** closing, archiving or moving either side to another space acts on both.
+- **Name:** right-click either side → **Rename Split View** to name the pair. A named split shows as one row with both icons; double-click it to rename, or clear the name to show both sides again. Alt+Shift+R renames the active tab, or its split as a whole.
 
-A pinned split is saved as a bookmark folder whose name starts with `⧉ ` and holds the two bookmarks, left then right. It syncs with your Chrome bookmarks; renaming the folder without the `⧉ ` prefix turns it back into an ordinary folder.
+A pinned split is saved as a bookmark folder whose name starts with `⧉ ` and holds the two bookmarks, left then right. A named split's folder is titled `⧉ ` followed by its name. It syncs with your Chrome bookmarks; renaming the folder without the `⧉ ` prefix turns it back into an ordinary folder.
+
+### Custom icons
+
+Right-click a pinned tab or a folder → **Change Icon…** to replace its icon with an emoji or one of the built-in line icons. Type or paste an emoji and press Return (⌃⌘Space opens the macOS emoji viewer), or search the icons. **Use site icon** or **Use folder icon** goes back to the default. Custom icons are saved on this device only.
 
 ### Custom icons
 
