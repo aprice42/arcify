@@ -399,7 +399,7 @@ h3 {
 }
 
 .folder {
-    margin: 1px 0;
+    margin: 8px 0;
     /* background-color: rgba(255, 255, 255, 0.1); */
     border-radius: 8px;
     overflow: hidden;
@@ -442,7 +442,7 @@ h3 {
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    min-height: 31px;
+    min-height: 35px;
     padding: 0 10px;
     cursor: pointer;
     user-select: none;
@@ -451,12 +451,12 @@ h3 {
 }
 
 .folder-icon {
-    --folder-fill: color-mix(in srgb, var(--space-bg-color, #8a8a8a) 73%, #fff);
+    --folder-fill: color-mix(in srgb, var(--space-bg-color, #8a8a8a) 70%, #fff);
     --folder-line: rgb(16 16 16 / 0.72);
     display: flex;
     flex: none;
-    width: 23px;
-    height: 23px;
+    width: 32px;
+    height: 32px;
     margin-right: 7px;
 }
 
@@ -935,15 +935,15 @@ h3 {
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    font-size: 17px;
+    width: 18px;
+    height: 18px;
+    font-size: 15px;
     line-height: 1;
 }
 
 .custom-icon svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
 }
 
 .icon-picker {
@@ -1099,8 +1099,6 @@ h3 {
 .tab-favicon {
     width: 18px;
     height: 18px;
-    /* Fills the same 20px slot as a custom icon, so labels line up */
-    margin: 0 1px;
 }
 
 /* Arc-like: when a pinned tab has navigated away, favicon becomes a back-to-pinned button */
@@ -1110,7 +1108,7 @@ h3 {
     width: 26px;
     height: 26px;
     padding: 4px;
-    margin: -4px -3px;
+    margin: -4px;
     border-radius: 6px;
     transition: background-color 0.12s ease, transform 0.12s ease;
 }
