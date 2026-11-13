@@ -936,13 +936,53 @@ h3 {
     height: 16px;
 }
 
-.folder-icon.custom {
-    fill: none;
-    opacity: 1;
+/* Bigger than a plain folder icon so the custom icon fits inside; margins keep titles aligned */
+.folder-icon.custom,
+.folder.collapsed div.folder-icon.custom {
+    position: relative;
+    flex: none;
+    width: 22px;
+    height: 20px;
+    margin-right: 4px;
+}
+
+.folder.collapsed div.folder-icon.custom {
+    margin-right: 10px;
+}
+
+.folder-icon.custom > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .folder-icon.custom .custom-icon {
-    margin-right: 0;
+    position: absolute;
+    left: 50%;
+    top: 57%;
+    width: 11px;
+    height: 11px;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    font-size: 9px;
+    fill: none;
+}
+
+.folder-icon.custom .custom-icon svg {
+    width: 11px;
+    height: 11px;
+    stroke-width: 2.5;
+}
+
+.folder.collapsed.has-open-tabs .folder-icon.custom::after {
+    content: '';
+    position: absolute;
+    right: -2px;
+    bottom: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
 }
 
 .icon-picker {
