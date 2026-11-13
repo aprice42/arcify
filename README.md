@@ -11,6 +11,7 @@ A Chrome extension that replicates Arc browser's tab management system, providin
 - Vertical tab management
 - Tab grouping functionality
 - Chrome split view support
+- Custom icons for pinned tabs and folders
 - Keyboard shortcuts for quick access
 - Bookmark integration
 - Clean, minimal interface
@@ -26,6 +27,10 @@ Tabs in a Chrome split view appear side by side on one row and act as a pair. Cr
 - **Close, archive and move:** closing, archiving or moving either side to another space acts on both.
 
 A pinned split is saved as a bookmark folder whose name starts with `⧉ ` and holds the two bookmarks, left then right. It syncs with your Chrome bookmarks; renaming the folder without the `⧉ ` prefix turns it back into an ordinary folder.
+
+### Custom icons
+
+Right-click a pinned tab or a folder → **Change Icon…** to replace its icon with an emoji or one of the built-in line icons. Type or paste an emoji and press Return (⌃⌘Space opens the macOS emoji viewer), or search the icons. **Use site icon** or **Use folder icon** goes back to the default. Custom icons are saved on this device only.
 
 ## Development Setup
 
@@ -238,6 +243,7 @@ If you have any questions or suggestions, please open an issue on GitHub.
 
 - Inspired by the Arc Browser's innovative tab management system. Huge thanks to the Arc team for coming up with the system we've all grown to love!
 - Thanks to all contributors who help improve this project 
+- Line icons from [Lucide](https://lucide.dev) (ISC license)
 
 ### Independent spaces
 
