@@ -29,11 +29,12 @@ import {
 } from './split-view.js';
 import { canCreateFolder, canMoveFolder, createFolder } from './folder-policy.js';
 import { loadFolderCollapsed, saveFolderCollapsed } from './folder-state.js';
-import { FOLDER_CLOSED_ICON, FOLDER_CLOSED_DOTS_ICON, FOLDER_OPEN_ICON, SPLIT_VIEW_ICON } from './icons.js';
+import { SPLIT_VIEW_ICON } from './icons.js';
 import {
     CUSTOM_ICONS_KEY, tabIconKey, folderIconKey, getCustomIcons, setCustomIcon, moveCustomIcon, createCustomIconElement
 } from './custom-icon.js';
 import { showIconPicker } from './icon-picker.js';
+import { folderGlyphSvg } from './folder-glyph.js';
 import { LocalStorage } from './localstorage.js';
 import { Utils } from './utils.js';
 import {
@@ -1792,20 +1793,11 @@ function updateFolderIcon(folderElement) {
     if (!folderElement) return;
     const folderIcon = folderElement.querySelector('.folder-icon');
     if (!folderIcon) return;
-    const icon = customIcons[folderIconKey(folderElement.dataset.bookmarkId)];
-    const customIcon = icon && createCustomIconElement(icon);
-    folderIcon.classList.toggle('custom', Boolean(customIcon));
-    const isCollapsed = folderElement.classList.contains('collapsed');
-    const hasOpenTabs = folderElement.classList.contains('has-open-tabs');
-    if (customIcon) {
-        // As in Arc, the icon sits inside the folder; a dot stands in for the open-tab marks it would cover.
-        folderIcon.innerHTML = FOLDER_CLOSED_ICON;
-        folderIcon.appendChild(customIcon);
-        return;
-    }
-    folderIcon.innerHTML = isCollapsed
-        ? (hasOpenTabs ? FOLDER_CLOSED_DOTS_ICON : FOLDER_CLOSED_ICON)
-        : FOLDER_OPEN_ICON;
+    folderIcon.innerHTML = folderGlyphSvg({
+        open: !folderElement.classList.contains('collapsed'),
+        hasOpenTabs: folderElement.classList.contains('has-open-tabs'),
+        icon: customIcons[folderIconKey(folderElement.dataset.bookmarkId)] || null
+    });
 }
 
 // Arc-like: when a folder is collapsed, show open bookmark tabs (active Chrome tabs) for that folder.

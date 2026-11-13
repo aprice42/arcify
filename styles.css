@@ -399,7 +399,7 @@ h3 {
 }
 
 .folder {
-    margin: 2px 0;
+    margin: 1px 0;
     /* background-color: rgba(255, 255, 255, 0.1); */
     border-radius: 8px;
     overflow: hidden;
@@ -420,11 +420,6 @@ h3 {
     display: none;
 }
 
-.folder.collapsed div.folder-icon {
-    width: 16px;
-    margin-right: 16px;
-}
-
 .folder.collapsed:hover {
     /* background-color: rgba(255, 255, 255, 0.2); */
     background: var(--space-bg-color-dark, rgba(255, 255, 255, 0.1));
@@ -436,6 +431,7 @@ h3 {
     overflow: hidden;
     text-overflow: ellipsis;
     font-weight: 600;
+    font-size: 13px;
 }
 
 .folder-title.hidden {
@@ -445,7 +441,9 @@ h3 {
 .folder-header {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    box-sizing: border-box;
+    min-height: 35px;
+    padding: 0 10px;
     cursor: pointer;
     user-select: none;
     /* background-color: rgba(255, 255, 255, 0.2); */
@@ -453,12 +451,31 @@ h3 {
 }
 
 .folder-icon {
-    width: 18px;
-    height: 16px;
-    margin-right: 4px;
-    fill: #101010bd;
-    opacity: 0.7;
-    transition: transform 0.2s;
+    --folder-fill: color-mix(in srgb, var(--space-bg-color, #8a8a8a) 62%, #fff);
+    --folder-line: rgb(16 16 16 / 0.72);
+    display: flex;
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin-right: 3px;
+}
+
+/* Arc-style folder: tinted fill and outline; a custom icon or open-tab dots inside take the outline colour */
+.folder-glyph .folder-shape path {
+    fill: var(--folder-fill);
+    stroke: var(--folder-line);
+    stroke-linejoin: round;
+}
+
+.folder-glyph .folder-inner {
+    fill: none;
+    stroke: var(--folder-line);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.folder-glyph .folder-dot {
+    fill: var(--folder-line);
 }
 
 /* (open-tab indicator is now part of the SVG icon; no pseudo-elements) */
@@ -467,7 +484,7 @@ h3 {
     flex: 1;
     background: none;
     border: none;
-    font-size: 14px;
+    font-size: 13px;
     color: #333;
     padding: 4px;
     border-radius: 4px;
@@ -516,7 +533,7 @@ h3 {
 }
 
 .folder-content {
-    padding: 0px 12px;
+    padding: 0 12px 0 13px;
     display: flex;
     flex-direction: column;
     min-height: 12px;
@@ -820,8 +837,8 @@ h3 {
 .tab {
     display: flex;
     align-items: center;
-    padding: 2px 12px;
-    margin-bottom: 2px;
+    padding: 1px 10px;
+    margin-bottom: 5px;
     border-radius: 12px;
     cursor: pointer;
     transition: background-color 0.3s ease;
@@ -918,69 +935,15 @@ h3 {
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
-    margin-right: 6px;
-    font-size: 14px;
+    width: 20px;
+    height: 20px;
+    font-size: 17px;
     line-height: 1;
 }
 
 .custom-icon svg {
-    width: 16px;
-    height: 16px;
-}
-
-/* Bigger than a plain folder icon so the custom icon fits inside; margins keep titles aligned */
-.folder-icon.custom,
-.folder.collapsed div.folder-icon.custom {
-    position: relative;
-    flex: none;
-    width: 22px;
+    width: 20px;
     height: 20px;
-    margin: -2px 0;
-}
-
-.folder.collapsed div.folder-icon.custom {
-    margin-right: 10px;
-}
-
-
-
-.folder-icon.custom > svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-}
-
-/* Matches the folder outline rather than the label, which can be light in dark mode */
-.folder-icon.custom .custom-icon {
-    color: #101010bd;
-    position: absolute;
-    left: 50%;
-    top: 57%;
-    width: 11px;
-    height: 11px;
-    margin: 0;
-    transform: translate(-50%, -50%);
-    font-size: 9px;
-    fill: none;
-}
-
-.folder-icon.custom .custom-icon svg {
-    width: 11px;
-    height: 11px;
-    stroke-width: 2.5;
-}
-
-.folder.collapsed.has-open-tabs .folder-icon.custom::after {
-    content: '';
-    position: absolute;
-    right: -2px;
-    bottom: 0;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: currentColor;
 }
 
 .icon-picker {
@@ -1134,16 +1097,15 @@ h3 {
 }
 
 .tab-favicon {
-    width: 16px;
-    height: 16px;
-    margin-right: 6px;
+    width: 20px;
+    height: 20px;
 }
 
 /* Arc-like: when a pinned tab has navigated away, favicon becomes a back-to-pinned button */
 .tab-favicon.pinned-back {
     cursor: pointer;
     padding: 4px;
-    margin: -4px 2px -4px -4px; /* keep layout stable despite padding */
+    margin: -4px 0 -4px -4px; /* keep layout stable despite padding */
     border-radius: 6px;
     transition: background-color 0.12s ease, transform 0.12s ease;
 }
@@ -1183,7 +1145,7 @@ h3 {
     /* Stack title and domain */
     justify-content: center;
     /* Center vertically */
-    margin-left: 8px;
+    margin-left: 7px;
     /* Space from favicon */
 }
 
