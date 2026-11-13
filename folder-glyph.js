@@ -2,7 +2,7 @@ import { ICON_SET } from './icon-set.js';
 
 // Arc-style folder icon drawn on a 24-unit grid: a tinted folder with an outline, which tips its
 // front flap forward when open. A custom icon is fitted inside with FIT_PADDING_PX to spare.
-export const FOLDER_PX = 32;
+export const FOLDER_PX = 27;
 const UNITS_PER_PX = 24 / FOLDER_PX;
 const OUTLINE = 1.2 * UNITS_PER_PX;
 const FIT_PADDING = 1 * UNITS_PER_PX;

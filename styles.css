@@ -455,8 +455,8 @@ h3 {
     --folder-line: rgb(16 16 16 / 0.72);
     display: flex;
     flex: none;
-    width: 32px;
-    height: 32px;
+    width: 27px;
+    height: 27px;
     margin-right: 7px;
 }
 
