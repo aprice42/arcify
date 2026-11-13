@@ -622,6 +622,11 @@ async function activatePinnedTabByURL(bookmarkUrl, targetSpaceId, spaceName, boo
 }
 
 // Initialize the sidebar when the DOM is loaded
+// Menus close on clicks elsewhere in the sidebar; a click in the page only shows up as the panel losing focus.
+window.addEventListener('blur', () => {
+    document.querySelectorAll('body > .context-menu').forEach(menu => menu.remove());
+});
+
 document.addEventListener('DOMContentLoaded', async () => {
     Logger.log('DOM loaded, initializing sidebar...');
     await applyColorOverrides();
