@@ -183,7 +183,7 @@ export function activateSpaceInDOM(spaceId, spaces, updateSpaceSwitcher) {
     updateSpaceSwitcher();
 }
 
-export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabElement, closeTab, spaces, moveTabToSpace, setActiveSpace, allBookmarkSpaceFolders, createSpaceFromInactive, onReplaceBookmarkUrlWithCurrent = null, moveFavoriteToSpace = null, splitActions = null) {
+export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabElement, closeTab, spaces, moveTabToSpace, setActiveSpace, allBookmarkSpaceFolders, createSpaceFromInactive, onReplaceBookmarkUrlWithCurrent = null, moveFavoriteToSpace = null, splitActions = null, onChangeIcon = null) {
     // Remove any existing context menus
     const existingMenu = document.getElementById('tab-context-menu');
     if (existingMenu) {
@@ -273,8 +273,20 @@ export function showTabContextMenu(x, y, tab, isPinned, isBookmarkOnly, tabEleme
             });
             contextMenu.appendChild(replaceBookmarkUrlOption);
         }
+    }
 
-        // Add a separator
+    if (onChangeIcon) {
+        const changeIconOption = document.createElement('div');
+        changeIconOption.className = 'context-menu-item';
+        changeIconOption.textContent = 'Change Icon…';
+        changeIconOption.addEventListener('click', () => {
+            contextMenu.remove();
+            onChangeIcon();
+        });
+        contextMenu.appendChild(changeIconOption);
+    }
+
+    if (!isBookmarkOnly) {
         const separator = document.createElement('div');
         separator.className = 'context-menu-separator';
         contextMenu.appendChild(separator);
