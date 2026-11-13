@@ -2209,7 +2209,9 @@ h3 {
     }
 
     .tab.active .tab-split-name,
-    .tab.split-named:has(+ .tab.split-right.active) .tab-split-name {
+    .tab.active .custom-icon,
+    .tab.split-named:has(+ .tab.split-right.active) .tab-split-name,
+    .tab.split-named:has(+ .tab.split-right.active) .custom-icon {
         color: #000000;
     }
 
