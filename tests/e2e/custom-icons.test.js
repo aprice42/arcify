@@ -60,9 +60,9 @@ test('a folder takes a line icon, and Escape leaves it unchanged', async () => {
     await openMenu(`${folder} > .folder-header`, '.context-menu', 'Change Icon…');
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.querySelector('.icon-picker'), { polling: 100 });
-    expect(await page.$(`${folder} .folder-icon .custom-icon`)).toBeNull();
+    expect(await page.$(`${folder} > .folder-header .folder-icon .folder-inner`)).toBeNull();
 
     await openMenu(`${folder} > .folder-header`, '.context-menu', 'Change Icon…');
     await page.$eval('.icon-picker-icon[data-name="briefcase"]', el => el.click());
-    await page.waitForSelector(`${folder} > .folder-header .folder-icon.custom .custom-icon svg`);
+    await page.waitForSelector(`${folder} > .folder-header .folder-icon .folder-inner`);
 });
