@@ -1801,12 +1801,14 @@ function updateFolderIcon(folderElement) {
     const icon = customIcons[folderIconKey(folderElement.dataset.bookmarkId)];
     const customIcon = icon && createCustomIconElement(icon);
     folderIcon.classList.toggle('custom', Boolean(customIcon));
-    if (customIcon) {
-        folderIcon.replaceChildren(customIcon);
-        return;
-    }
     const isCollapsed = folderElement.classList.contains('collapsed');
     const hasOpenTabs = folderElement.classList.contains('has-open-tabs');
+    if (customIcon) {
+        // As in Arc, the icon sits inside the folder; a dot stands in for the open-tab marks it would cover.
+        folderIcon.innerHTML = FOLDER_CLOSED_ICON;
+        folderIcon.appendChild(customIcon);
+        return;
+    }
     folderIcon.innerHTML = isCollapsed
         ? (hasOpenTabs ? FOLDER_CLOSED_DOTS_ICON : FOLDER_CLOSED_ICON)
         : FOLDER_OPEN_ICON;
