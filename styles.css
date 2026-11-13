@@ -399,7 +399,7 @@ h3 {
 }
 
 .folder {
-    margin: 8px 0;
+    margin: 2px 0;
     /* background-color: rgba(255, 255, 255, 0.1); */
     border-radius: 8px;
     overflow: hidden;
@@ -455,7 +455,7 @@ h3 {
 .folder-icon {
     width: 18px;
     height: 16px;
-    margin-right: 8px;
+    margin-right: 4px;
     fill: #101010bd;
     opacity: 0.7;
     transition: transform 0.2s;
@@ -820,8 +820,8 @@ h3 {
 .tab {
     display: flex;
     align-items: center;
-    padding: 4px 12px;
-    margin-bottom: 4px;
+    padding: 2px 12px;
+    margin-bottom: 2px;
     border-radius: 12px;
     cursor: pointer;
     transition: background-color 0.3s ease;
@@ -920,7 +920,7 @@ h3 {
     justify-content: center;
     width: 16px;
     height: 16px;
-    margin-right: 8px;
+    margin-right: 6px;
     font-size: 14px;
     line-height: 1;
 }
@@ -937,12 +937,14 @@ h3 {
     flex: none;
     width: 22px;
     height: 20px;
-    margin-right: 4px;
+    margin: -2px 0;
 }
 
 .folder.collapsed div.folder-icon.custom {
     margin-right: 10px;
 }
+
+
 
 .folder-icon.custom > svg {
     display: block;
@@ -950,7 +952,9 @@ h3 {
     height: 100%;
 }
 
+/* Matches the folder outline rather than the label, which can be light in dark mode */
 .folder-icon.custom .custom-icon {
+    color: #101010bd;
     position: absolute;
     left: 50%;
     top: 57%;
@@ -1132,14 +1136,14 @@ h3 {
 .tab-favicon {
     width: 16px;
     height: 16px;
-    margin-right: 8px;
+    margin-right: 6px;
 }
 
 /* Arc-like: when a pinned tab has navigated away, favicon becomes a back-to-pinned button */
 .tab-favicon.pinned-back {
     cursor: pointer;
     padding: 4px;
-    margin: -4px 4px -4px -4px; /* keep layout stable despite padding */
+    margin: -4px 2px -4px -4px; /* keep layout stable despite padding */
     border-radius: 6px;
     transition: background-color 0.12s ease, transform 0.12s ease;
 }
