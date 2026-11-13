@@ -442,7 +442,7 @@ h3 {
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    min-height: 35px;
+    min-height: 31px;
     padding: 0 10px;
     cursor: pointer;
     user-select: none;
@@ -451,13 +451,13 @@ h3 {
 }
 
 .folder-icon {
-    --folder-fill: color-mix(in srgb, var(--space-bg-color, #8a8a8a) 62%, #fff);
+    --folder-fill: color-mix(in srgb, var(--space-bg-color, #8a8a8a) 73%, #fff);
     --folder-line: rgb(16 16 16 / 0.72);
     display: flex;
     flex: none;
-    width: 24px;
-    height: 24px;
-    margin-right: 3px;
+    width: 23px;
+    height: 23px;
+    margin-right: 7px;
 }
 
 /* Arc-style folder: tinted fill and outline; a custom icon or open-tab dots inside take the outline colour */
@@ -837,7 +837,7 @@ h3 {
 .tab {
     display: flex;
     align-items: center;
-    padding: 1px 10px;
+    padding: 1.5px 10px;
     margin-bottom: 5px;
     border-radius: 12px;
     cursor: pointer;
@@ -1097,18 +1097,20 @@ h3 {
 }
 
 .tab-favicon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
+    /* Fills the same 20px slot as a custom icon, so labels line up */
+    margin: 0 1px;
 }
 
 /* Arc-like: when a pinned tab has navigated away, favicon becomes a back-to-pinned button */
 .tab-favicon.pinned-back {
     cursor: pointer;
     /* The padding is the hover target; the box grows by it (border-box) so the icon keeps its size */
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     padding: 4px;
-    margin: -4px;
+    margin: -4px -3px;
     border-radius: 6px;
     transition: background-color 0.12s ease, transform 0.12s ease;
 }
@@ -1138,6 +1140,7 @@ h3 {
 
 .tab-details {
     flex-grow: 1;
+    font-size: 12px;
     /* Allow details to take up space */
     overflow: hidden;
     /* Prevent long text overflow */
