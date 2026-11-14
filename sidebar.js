@@ -2689,7 +2689,7 @@ function markSplitRows(root, liveSplitNames = {}) {
             label.className = 'visually-hidden';
             label.textContent = name ? 'Split view' : SPLIT_ROW_LABELS[role];
             row.querySelector('.tab-details')?.appendChild(label);
-            if (name) showSplitName(row, rows[i + 1], name);
+            if (name) showSplitName(row, name);
             if (role === 'alone') {
                 const icon = document.createElement('span');
                 icon.className = 'tab-split-indicator';
@@ -2701,17 +2701,10 @@ function markSplitRows(root, liveSplitNames = {}) {
     }
 }
 
-// A named split is one row, as in Arc: both favicons, then the name.
-function showSplitName(row, partner, name) {
+// A named split is one row: the left half's icon, then the name.
+function showSplitName(row, name) {
     row.classList.add('split-named');
     row.dataset.splitName = name;
-    const partnerIcon = (partner.querySelector('.custom-icon') || partner.querySelector('.tab-favicon'))?.cloneNode(true);
-    if (partnerIcon) {
-        partnerIcon.classList.remove('tab-favicon', 'pinned-back', 'replaced');
-        partnerIcon.classList.add('tab-split-partner-icon');
-        if (partnerIcon.tagName === 'IMG') partnerIcon.alt = '';
-        (row.querySelector('.custom-icon') || row.querySelector('.tab-favicon'))?.after(partnerIcon);
-    }
     const nameElement = document.createElement('span');
     nameElement.className = 'tab-split-name';
     nameElement.textContent = name;
