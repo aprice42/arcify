@@ -902,12 +902,6 @@ h3 {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.tab-split-partner-icon {
-    width: 16px;
-    height: 16px;
-    margin: 0 8px 0 -4px;
-}
-
 .tab-split-name {
     overflow: hidden;
     white-space: nowrap;
