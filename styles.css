@@ -459,7 +459,8 @@ h3 {
     flex: none;
     width: 27px;
     height: 27px;
-    margin-right: 7px;
+    /* The glyph's outline sits ~3px inside its box; line it up with tab favicons. */
+    margin: 0 10px 0 -3px;
 }
 
 /* Arc-style folder: tinted fill and outline; a custom icon or open-tab dots inside take the outline colour */
