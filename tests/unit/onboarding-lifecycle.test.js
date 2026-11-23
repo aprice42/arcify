@@ -26,6 +26,7 @@ function background(completed = false, onboardingVersion = undefined, version = 
         registerBookmarkListeners() {},
         enqueueBookmarkOrder: async () => [],
         SpaceStore: class { install() {} async dispatch() { return [{ id: 'home' }]; } },
+        FavoritesStore: class { install() {} },
         Utils: { getSettings: async () => ({ autoArchiveEnabled: false }) },
         Logger: { log() {}, error() {} }
     });

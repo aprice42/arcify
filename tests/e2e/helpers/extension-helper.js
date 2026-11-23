@@ -34,6 +34,7 @@ export async function launchBrowserWithExtension(options = {}) {
       '--window-size=1920,1080',
     ],
     devtools: false,
+    ...(options.userDataDir && { userDataDir: options.userDataDir }),
   });
 
   // Wait a bit for the extension to initialize

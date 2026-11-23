@@ -19,11 +19,13 @@ import { visibleSplitIds, splitLastActivity, canCreateSplit } from './split-view
 import { moveSplitOffFavorite, SPLIT_JOIN_KEY } from './split-from-favorite.js';
 import { registerBookmarkListeners } from './bookmark-events.js';
 import { enqueueBookmarkOperation } from './bookmark-writer.js';
+import { FavoritesStore } from './favorites-store.js';
 
 registerBookmarkListeners();
 
 const spaceStore = new SpaceStore();
 spaceStore.install();
+new FavoritesStore().install();
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type !== 'spaceStore') return;
     spaceStore.dispatch(message).then(spaces => sendResponse({ success: true, spaces }), error => sendResponse({ success: false, error: error.message }));

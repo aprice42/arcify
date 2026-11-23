@@ -45,7 +45,7 @@ function startBackground() {
         chrome, console, setTimeout, clearTimeout,
         registerTourMessages() {}, registerBookmarkListeners() {},
         enqueueBookmarkOperation: async () => ({}), copyCurrentTabUrlWithFallback: async () => {},
-        SpaceStore, ownerOf, isProtectedFavorite, visibleSplitIds, splitLastActivity, canCreateSplit, moveSplitOffFavorite, SPLIT_JOIN_KEY, Utils, Logger
+        SpaceStore, FavoritesStore: class { install() {} }, ownerOf, isProtectedFavorite, visibleSplitIds, splitLastActivity, canCreateSplit, moveSplitOffFavorite, SPLIT_JOIN_KEY, Utils, Logger
     });
     return () => Promise.all(chrome.alarms.onAlarm.listeners.map(fn => fn({ name: 'autoArchiveTabsAlarm' })));
 }
