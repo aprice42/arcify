@@ -113,3 +113,23 @@ test('unpinning a favorite removes it', async () => {
     await page.waitForFunction(selector => !document.querySelector(selector), { polling: 100 }, favicon(bookmarkId));
     await page.waitForFunction(async id => (await chrome.bookmarks.get(id).catch(() => [])).length === 0, { polling: 100 }, bookmarkId);
 });
+
+test.each(['pinned', 'temporary'])('dragging a favorite into a space\'s %s section moves it there without an error', async section => {
+    const { tabId, bookmarkId } = await pinNewTab(`${base}/${section}`);
+    const dialogs = [];
+    const onDialog = dialog => { dialogs.push(dialog.message()); dialog.dismiss(); };
+    page.on('dialog', onDialog);
+    await page.evaluate((id, section) => {
+        const icon = document.querySelector(`#pinnedFavicons [data-tab-id="${id}"]`);
+        const target = document.querySelector(`.space.active [data-tab-type="${section}"]`);
+        icon.classList.add('dragging');
+        target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientX: 50, clientY: target.getBoundingClientRect().bottom - 2 }));
+        icon.classList.remove('dragging');
+    }, tabId, section);
+    const row = `.space.active [data-tab-type="${section}"] .tab[data-tab-id="${tabId}"]${section === 'pinned' ? '[data-bookmark-id]' : ''}`;
+    await page.waitForFunction(selector => document.querySelector(selector), { polling: 100 }, row);
+    await page.waitForFunction(async id => (await chrome.bookmarks.get(id).catch(() => [])).length === 0, { polling: 100 }, bookmarkId);
+    page.off('dialog', onDialog);
+    expect(dialogs).toEqual([]);
+    expect(await page.evaluate(id => chrome.tabs.get(id).then(tab => tab.pinned), tabId)).toBe(false);
+});
