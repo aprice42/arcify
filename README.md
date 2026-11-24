@@ -279,6 +279,8 @@ a favorite, the brief Undo prompt can restore its bookmark in the same folder an
 position, and an unpinned tab that is still open becomes that favorite's tab again.
 Nested bookmark folders remain nested in the space. Deleting a space also deletes its bookmark folder and all bookmarks inside it.
 
+The Favorites row at the top of the sidebar shows Chrome's pinned tabs, and each one is saved as a bookmark in an **Arcify Favorites** folder beside the **Arcify** folder. Favorites stay in the row after their tab is closed or Chrome restarts, whatever Chrome's startup setting; click one to open it as a pinned tab again. Pinning a tab anywhere, including Chrome's tab strip, adds it. Unpinning it, dragging it out of the row, or deleting its bookmark removes it. Dragging favorites in the row or in the tab strip reorders the bookmarks. On the first run after updating, tabs that are already pinned are saved to the folder.
+
 Space chips follow the order of the space folders under **Arcify**: moving a folder
 in Chrome's bookmark manager reorders the chips, and dragging a chip moves its
 folder. On the first load after updating, space order follows the bookmark folder
