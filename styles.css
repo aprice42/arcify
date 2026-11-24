@@ -95,6 +95,16 @@ h3 {
     object-fit: contain;
 }
 
+/* Matches unloaded space pins (.tab.bookmark-only). */
+.pinned-favicon.unloaded img {
+    opacity: 0.5;
+}
+
+.pinned-favicon:focus-visible {
+    outline: 2px solid var(--sidebar-text-color, #333);
+    outline-offset: -2px;
+}
+
 .context-menu {
     display: block;
     position: fixed;

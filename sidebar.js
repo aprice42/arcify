@@ -368,6 +368,10 @@ function createFavoriteElement() {
         event.preventDefault();
         activateFavorite(element);
     });
+    // Screen readers activate with a click that has no mousedown before it (detail 0).
+    element.addEventListener('click', event => {
+        if (event.detail === 0) activateFavorite(element);
+    });
     element.addEventListener('dragstart', () => element.classList.add('dragging'));
     element.addEventListener('dragend', () => element.classList.remove('dragging'));
     const img = document.createElement('img');
@@ -383,8 +387,8 @@ function updateFavoriteElement(element, item) {
     else delete element.dataset.tabId;
     if (item.bookmarkId) element.dataset.favoriteId = item.bookmarkId;
     else delete element.dataset.favoriteId;
-    element.title = item.title;
-    element.setAttribute('aria-label', loaded ? item.title : `${item.title} (not open)`);
+    element.title = loaded ? item.title : `${item.title} (not open)`;
+    element.setAttribute('aria-label', element.title);
     const img = element.querySelector('img');
     if (img.dataset.url === item.url) return;
     img.dataset.url = item.url;

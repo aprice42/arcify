@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createServer } from 'node:http';
 import { launchBrowserWithExtension, openSidebar } from './helpers/extension-helper.js';
 
-// Favorites (the top row) are kept as bookmarks, so they outlive their tabs and a restart.
+// @see favorites-store.js
 let server, base, browser, page, profile;
 const favicon = id => `#pinnedFavicons .pinned-favicon[data-favorite-id="${id}"]`;
 

@@ -1,9 +1,13 @@
+import { isPracticeUrl } from './tour-practice.js';
+
 // Favorites (the sidebar's top row) are pinned tabs bound to bookmarks, which outlive the tabs across a restart.
 // The background is the only writer; bindings are in session storage because tab IDs don't survive a restart.
 
 export const FAVORITES_FOLDER_TITLE = 'Arcify Favorites';
 const FOLDER_KEY = 'favoritesFolderId';
 export const BINDINGS_KEY = 'favoriteBindings';
+// Where each favorite's tab last was, so a restored tab that had navigated still finds its favorite.
+export const LAST_URLS_KEY = 'favoriteLastUrls';
 const UNPIN_SETTLE_MS = 250;
 
 const tabUrl = tab => tab.url || tab.pendingUrl || '';
@@ -18,9 +22,14 @@ function urlKey(url) {
 }
 
 // Exact URL first, then origin and path, so a favorite that picked up a query or hash still matches.
-export function matchBookmark(url, bookmarks) {
-    return bookmarks.find(b => b.url === url) || bookmarks.find(b => urlKey(b.url) === urlKey(url)) || null;
+export function matchBookmark(url, bookmarks, lastUrls = {}) {
+    const urls = b => [b.url, lastUrls[b.id]].filter(Boolean);
+    return bookmarks.find(b => urls(b).includes(url))
+        || bookmarks.find(b => urls(b).some(u => urlKey(u) === urlKey(url))) || null;
 }
+
+// Tour practice tabs show in the row while pinned but aren't kept, and incognito pins never reach synced bookmarks.
+const keepsFavorite = tab => !tab.incognito && !isPracticeUrl(tabUrl(tab));
 
 /**
  * The favorites for one window, in bookmark order, with the pinned tab bound to each (or null).
@@ -86,6 +95,17 @@ export class FavoritesStore {
         await chrome.storage.session.set({ [BINDINGS_KEY]: bindings });
     }
 
+    async lastUrls() {
+        return (await chrome.storage.local.get(LAST_URLS_KEY))[LAST_URLS_KEY] || {};
+    }
+
+    async setLastUrl(bookmarkId, url) {
+        const lastUrls = await this.lastUrls();
+        if (url) lastUrls[bookmarkId] = url;
+        else delete lastUrls[bookmarkId];
+        await chrome.storage.local.set({ [LAST_URLS_KEY]: lastUrls });
+    }
+
     async pinnedTabs(windowId) {
         return chrome.tabs.query({ pinned: true, ...(windowId !== undefined && { windowId }) });
     }
@@ -106,13 +126,18 @@ export class FavoritesStore {
     async adopt(tab) {
         const url = tabUrl(tab);
         const bindings = await this.bindings();
-        if (bindings[tab.id] || !tab.pinned || !url) return;
+        if (bindings[tab.id]) {
+            if (url) await this.setLastUrl(bindings[tab.id], url);
+            return;
+        }
+        if (!tab.pinned || !url || !keepsFavorite(tab)) return;
         const { folder, bookmarks } = await this.bookmarks();
         const windowTabs = new Set((await this.pinnedTabs(tab.windowId)).map(t => String(t.id)));
         const taken = new Set(Object.entries(bindings).filter(([tabId]) => windowTabs.has(tabId)).map(([, id]) => id));
-        const bookmark = matchBookmark(url, bookmarks.filter(b => !taken.has(b.id)))
+        const bookmark = matchBookmark(url, bookmarks.filter(b => !taken.has(b.id)), await this.lastUrls())
             || await chrome.bookmarks.create({ parentId: folder.id, title: tab.title || url, url });
         await this.saveBindings({ ...bindings, [tab.id]: bookmark.id });
+        await this.setLastUrl(bookmark.id, url);
     }
 
     /** Unpinning a favorite's tab removes the favorite, in every window; closing the tab doesn't. */
@@ -123,7 +148,10 @@ export class FavoritesStore {
         delete bindings[tabId];
         await this.saveBindings(bindings);
         const tab = await chrome.tabs.get(tabId).catch(() => null);
-        if (tab && !tab.pinned) await chrome.bookmarks.remove(bookmarkId).catch(() => {});
+        if (tab && !tab.pinned) {
+            await chrome.bookmarks.remove(bookmarkId).catch(() => {});
+            await this.setLastUrl(bookmarkId, null);
+        }
     }
 
     async tabRemoved(tabId) {
@@ -148,12 +176,16 @@ export class FavoritesStore {
         if (!tabIds.length) return;
         tabIds.forEach(tabId => delete bindings[tabId]);
         await this.saveBindings(bindings);
+        await this.setLastUrl(bookmarkId, null);
         for (const tabId of tabIds) await chrome.tabs.update(Number(tabId), { pinned: false }).catch(() => {});
     }
 
+    /** Chrome reports only the folder as removed, not its bookmarks, so unpin every favorite's tab here. */
     async folderGone() {
-        await chrome.storage.local.remove(FOLDER_KEY);
+        const tabIds = Object.keys(await this.bindings());
+        await chrome.storage.local.remove([FOLDER_KEY, LAST_URLS_KEY]);
         await this.saveBindings({});
+        for (const tabId of tabIds) await chrome.tabs.update(Number(tabId), { pinned: false }).catch(() => {});
     }
 
     async applyOrder(folderId, ids) {
@@ -204,6 +236,10 @@ export class FavoritesStore {
 
     async add({ tabId, index }) {
         const tab = await chrome.tabs.get(tabId);
+        if (!keepsFavorite(tab)) {
+            await chrome.tabs.update(tabId, { pinned: true });
+            return;
+        }
         const { folder, bookmarks } = await this.bookmarks();
         const bindings = await this.bindings();
         const at = Math.max(0, Math.min(index ?? bookmarks.length, bookmarks.length));
@@ -216,6 +252,7 @@ export class FavoritesStore {
             if (!url) throw new Error('This tab has no address to save as a favorite yet.');
             const bookmark = await chrome.bookmarks.create({ parentId: folder.id, title: tab.title || url, url, index: at });
             await this.saveBindings({ ...bindings, [tabId]: bookmark.id });
+            await this.setLastUrl(bookmark.id, url);
         }
         if (!tab.pinned) await chrome.tabs.update(tabId, { pinned: true });
         await this.syncTabOrder(tab.windowId);
@@ -246,6 +283,7 @@ export class FavoritesStore {
         const index = pinned.filter(t => position.get(bindings[t.id]) < position.get(bookmarkId)).length;
         const tab = await chrome.tabs.create({ windowId, url: bookmark.url, pinned: true, index, active: true });
         await this.saveBindings({ ...(await this.bindings()), [tab.id]: bookmarkId });
+        await this.setLastUrl(bookmarkId, bookmark.url);
     }
 
     async dispatch(message) {
@@ -299,7 +337,7 @@ export class FavoritesStore {
             return true;
         });
 
-        // Pinned tabs from before this version, or pinned while the worker was stopped.
+        // Pinned tabs from before this version, and rebinding after a restart or update clears session storage.
         handle(() => this.reconcile());
     }
 }

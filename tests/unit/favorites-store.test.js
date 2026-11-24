@@ -6,7 +6,7 @@ let nodes, tabs, local, session, nextId;
 const area = data => ({
     async get(key) { return { [key]: structuredClone(data[key]) }; },
     async set(values) { Object.assign(data, structuredClone(values)); },
-    async remove(key) { delete data[key]; }
+    async remove(keys) { [keys].flat().forEach(key => delete data[key]); }
 });
 const children = parentId => nodes.filter(n => n.parentId === parentId).sort((a, b) => a.index - b.index);
 const reindex = parentId => children(parentId).forEach((n, i) => { n.index = i; });
@@ -27,6 +27,7 @@ beforeEach(() => {
     local = {};
     session = {};
     globalThis.chrome = {
+        runtime: { getURL: path => `chrome-extension://arcify/${path}` },
         storage: { local: area(local), session: area(session) },
         bookmarks: {
             get: async id => { const n = nodes.find(n => n.id === id); if (!n) throw new Error('missing'); return [n]; },
@@ -96,6 +97,39 @@ test('after a restart, a restored pinned tab binds to its favorite instead of ad
     await new FavoritesStore().reconcile();
     assert.deepEqual(favoriteUrls(), ['https://mail.test/']);
     assert.equal(session[BINDINGS_KEY][9], children(folderId())[0].id);
+});
+
+test('after a restart, a restored tab that had navigated away binds to its favorite by its last address', async () => {
+    tabs = [tab(1, 'https://cal.test/week/47')];
+    const store = new FavoritesStore();
+    await store.reconcile();
+    tabs[0].url = 'https://cal.test/week/48';
+    await store.adopt(tabs[0]); // chrome.tabs.onUpdated
+    delete session[BINDINGS_KEY];
+    tabs = [tab(9, 'https://cal.test/week/48')];
+    await new FavoritesStore().reconcile();
+    assert.deepEqual(favoriteUrls(), ['https://cal.test/week/47']);
+    assert.equal(session[BINDINGS_KEY][9], children(folderId())[0].id);
+});
+
+test('tour practice and incognito pinned tabs are shown but not saved', async () => {
+    tabs = [tab(1, 'chrome-extension://arcify/tutorial-practice.html#run=1&lesson=favorites', { index: 0 }),
+        tab(2, 'https://private.test/', { index: 1, incognito: true }), tab(3, 'https://dropped.test/', { pinned: false, incognito: true, index: 2 })];
+    const store = new FavoritesStore();
+    await store.reconcile();
+    await store.add({ tabId: 3, index: 0 });
+    assert.deepEqual(favoriteUrls(), []);
+    assert.equal(tabs[2].pinned, true);
+    assert.deepEqual((await store.get({ windowId: 1 })).items.map(i => [i.bookmarkId, i.tabId]), [[null, 1], [null, 2], [null, 3]]);
+});
+
+test('deleting the favorites folder unpins the favorites\' tabs', async () => {
+    tabs = [tab(1, 'https://mail.test/'), tab(2, 'https://cal.test/', { pinned: false })];
+    const store = new FavoritesStore();
+    await store.reconcile();
+    await store.folderGone(); // chrome.bookmarks.onRemoved for the folder
+    assert.equal(tabs[0].pinned, false);
+    assert.deepEqual(session[BINDINGS_KEY], {});
 });
 
 test('a favorite stays bound to its tab after the tab navigates elsewhere', async () => {
