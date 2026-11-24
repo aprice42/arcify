@@ -417,7 +417,7 @@ h3 {
 }
 
 .folder {
-    margin: 8px 0;
+    margin: 0;
     /* background-color: rgba(255, 255, 255, 0.1); */
     border-radius: 8px;
     overflow: hidden;
@@ -438,11 +438,6 @@ h3 {
     display: none;
 }
 
-.folder.collapsed div.folder-icon {
-    width: 16px;
-    margin-right: 16px;
-}
-
 .folder.collapsed:hover {
     /* background-color: rgba(255, 255, 255, 0.2); */
     background: var(--space-bg-color-dark, rgba(255, 255, 255, 0.1));
@@ -454,6 +449,7 @@ h3 {
     overflow: hidden;
     text-overflow: ellipsis;
     font-weight: 600;
+    font-size: 13px;
 }
 
 .folder-title.hidden {
@@ -463,7 +459,9 @@ h3 {
 .folder-header {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    box-sizing: border-box;
+    min-height: 35px;
+    padding: 0 10px;
     cursor: pointer;
     user-select: none;
     /* background-color: rgba(255, 255, 255, 0.2); */
@@ -471,12 +469,32 @@ h3 {
 }
 
 .folder-icon {
-    width: 18px;
-    height: 16px;
-    margin-right: 8px;
-    fill: #101010bd;
-    opacity: 0.7;
-    transition: transform 0.2s;
+    --folder-fill: color-mix(in srgb, var(--space-bg-color, #8a8a8a) 70%, #fff);
+    --folder-line: rgb(16 16 16 / 0.72);
+    display: flex;
+    flex: none;
+    width: 27px;
+    height: 27px;
+    /* The glyph's outline sits ~3px inside its box; line it up with tab favicons. */
+    margin: 0 5px 0 -3px;
+}
+
+/* Arc-style folder: tinted fill and outline; a custom icon or open-tab dots inside take the outline colour */
+.folder-glyph .folder-shape path {
+    fill: var(--folder-fill);
+    stroke: var(--folder-line);
+    stroke-linejoin: round;
+}
+
+.folder-glyph .folder-inner {
+    fill: none;
+    stroke: var(--folder-line);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.folder-glyph .folder-dot {
+    fill: var(--folder-line);
 }
 
 /* (open-tab indicator is now part of the SVG icon; no pseudo-elements) */
@@ -485,7 +503,7 @@ h3 {
     flex: 1;
     background: none;
     border: none;
-    font-size: 14px;
+    font-size: 13px;
     color: #333;
     padding: 4px;
     border-radius: 4px;
@@ -534,7 +552,7 @@ h3 {
 }
 
 .folder-content {
-    padding: 0px 12px;
+    padding: 0 12px 0 13px;
     display: flex;
     flex-direction: column;
     min-height: 12px;
@@ -838,8 +856,8 @@ h3 {
 .tab {
     display: flex;
     align-items: center;
-    padding: 4px 12px;
-    margin-bottom: 4px;
+    padding: 1.5px 10px;
+    margin-bottom: 5px;
     border-radius: 12px;
     cursor: pointer;
     transition: background-color 0.3s ease;
@@ -926,6 +944,129 @@ h3 {
     text-overflow: ellipsis;
 }
 
+/* A custom icon replaces the favicon or folder icon; the favicon stays hidden for live updates */
+.tab-favicon.replaced {
+    display: none;
+}
+
+.custom-icon {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.custom-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.icon-picker {
+    position: fixed;
+    z-index: 1001;
+    box-sizing: border-box;
+    width: min(288px, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #fff;
+    color: #333;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    font-size: 13px;
+}
+
+.icon-picker-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.icon-picker-label input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #8a8a8a;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: normal;
+}
+
+.icon-picker-hint {
+    margin: -4px 0 10px;
+    color: #555;
+    font-size: 12px;
+}
+
+.icon-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    max-height: min(216px, calc(100vh - 220px));
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.icon-picker-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.icon-picker-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.icon-picker-icon[hidden] {
+    display: none;
+}
+
+.icon-picker-icon:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.icon-picker-icon[aria-pressed="true"] {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+/* Inset, so the scrolling grid doesn't clip the focus ring */
+.icon-picker .icon-picker-icon:focus-visible {
+    outline-offset: -2px;
+}
+
+.icon-picker :focus-visible {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 1px;
+}
+
+.icon-picker-reset {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #8a8a8a;
+    border-radius: 6px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
 .context-menu-item.disabled {
     opacity: 0.5;
     cursor: default;
@@ -984,16 +1125,18 @@ h3 {
 }
 
 .tab-favicon {
-    width: 16px;
-    height: 16px;
-    margin-right: 8px;
+    width: 18px;
+    height: 18px;
 }
 
 /* Arc-like: when a pinned tab has navigated away, favicon becomes a back-to-pinned button */
 .tab-favicon.pinned-back {
     cursor: pointer;
+    /* The padding is the hover target; the box grows by it (border-box) so the icon keeps its size */
+    width: 26px;
+    height: 26px;
     padding: 4px;
-    margin: -4px 4px -4px -4px; /* keep layout stable despite padding */
+    margin: -4px;
     border-radius: 6px;
     transition: background-color 0.12s ease, transform 0.12s ease;
 }
@@ -1009,8 +1152,7 @@ h3 {
 /* Arc-like: "/" indicator next to favicon when pinned URL has changed */
 .tab-url-changed-slash {
     display: none;
-    margin-right: 6px;
-    margin-left: -2px;
+    margin-left: 3px;
     font-size: 12px;
     line-height: 1;
     opacity: 0.7;
@@ -1024,6 +1166,7 @@ h3 {
 
 .tab-details {
     flex-grow: 1;
+    font-size: 12px;
     /* Allow details to take up space */
     overflow: hidden;
     /* Prevent long text overflow */
@@ -1033,7 +1176,7 @@ h3 {
     /* Stack title and domain */
     justify-content: center;
     /* Center vertically */
-    margin-left: 8px;
+    margin-left: 7px;
     /* Space from favicon */
 }
 
@@ -2100,7 +2243,9 @@ h3 {
     }
 
     .tab.active .tab-split-name,
-    .tab.split-named:has(+ .tab.split-right.active) .tab-split-name {
+    .tab.active .custom-icon,
+    .tab.split-named:has(+ .tab.split-right.active) .tab-split-name,
+    .tab.split-named:has(+ .tab.split-right.active) .custom-icon {
         color: #000000;
     }
 
@@ -2183,6 +2328,28 @@ h3 {
     .placeholder-close-btn:hover {
         color: #ECEFF1;
         background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .icon-picker {
+        border-color: #444;
+        background: #2a2a2a;
+        color: #ECEFF1;
+    }
+
+    .icon-picker-hint {
+        color: #c4c4c4;
+    }
+
+    .icon-picker-icon:hover {
+        background: rgba(255, 255, 255, 0.12);
+    }
+
+    .icon-picker-icon[aria-pressed="true"] {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .icon-picker :focus-visible {
+        outline-color: #93b4ff;
     }
 
     /* Context menu dark mode */

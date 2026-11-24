@@ -29,8 +29,13 @@ import {
 } from './split-view.js';
 import { canCreateFolder, canMoveFolder, createFolder } from './folder-policy.js';
 import { loadFolderCollapsed, saveFolderCollapsed } from './folder-state.js';
-import { FOLDER_CLOSED_ICON, FOLDER_CLOSED_DOTS_ICON, FOLDER_OPEN_ICON, SPLIT_VIEW_ICON } from './icons.js';
+import { SPLIT_VIEW_ICON } from './icons.js';
 import { getContextTabIds, getTabSelectionRange } from './tab-selection.js';
+import {
+    CUSTOM_ICONS_KEY, tabIconKey, folderIconKey, getCustomIcons, setCustomIcon, moveCustomIcon, createCustomIconElement
+} from './custom-icon.js';
+import { showIconPicker } from './icon-picker.js';
+import { folderGlyphSvg } from './folder-glyph.js';
 import { LocalStorage } from './localstorage.js';
 import { Utils } from './utils.js';
 import {
@@ -76,6 +81,8 @@ let isDraggingTab = false;
 let draggedSpaceSwitcherButton = null;
 let pendingMutationCount = 0;
 let currentWindow = null;
+// Mirrors CUSTOM_ICONS_KEY so rows can be drawn without a storage read each.
+let customIcons = {};
 let defaultSpaceName = 'Home';
 let showAllOpenTabsInCollapsedFolders = false; // default Arc behavior is false (active-only)
 let activeChromeTabId = null;
@@ -244,6 +251,7 @@ async function replaceBookmarkUrlWithCurrentUrl(tab, tabElement) {
         // Keep bookmark title in sync with the new pinned page for clarity.
         if (newTitle) updatePayload.title = newTitle;
         await updateFavoriteBookmark(bookmark.id, updatePayload);
+        if (pinnedUrl) await moveCustomIcon(tabIconKey(pinnedUrl), tabIconKey(newUrl));
     } catch (e) {
         console.error('[Arcify] chrome.bookmarks.update failed', { bookmarkId: resolvedBookmarkId, newUrl, error: e });
         return;
@@ -833,6 +841,7 @@ async function adoptStoredSpaces(next, { render = true } = {}) {
 }
 
 async function initSidebar() {
+    customIcons = await getCustomIcons();
     const settings = await Utils.getSettings();
     defaultSpaceName = settings.defaultSpaceName || 'Home';
     showAllOpenTabsInCollapsedFolders = Boolean(settings.showAllOpenTabsInCollapsedFolders);
@@ -867,8 +876,12 @@ async function initSidebar() {
     sidebarReady = true;
     refreshCoordinator.schedule();
     chrome.storage.onChanged.addListener((changes, area) => {
-        if (area !== 'local' || !changes.spaces || !sidebarReady) return;
-        scheduleStoredSpacesRefresh();
+        if (area !== 'local' || !sidebarReady) return;
+        if (changes.spaces) scheduleStoredSpacesRefresh();
+        if (changes[CUSTOM_ICONS_KEY]) {
+            customIcons = changes[CUSTOM_ICONS_KEY].newValue || {};
+            refreshCoordinator.invalidateView();
+        }
     });
     await offerTabGroupImport();
 }
@@ -2070,11 +2083,11 @@ function updateFolderIcon(folderElement) {
     if (!folderElement) return;
     const folderIcon = folderElement.querySelector('.folder-icon');
     if (!folderIcon) return;
-    const isCollapsed = folderElement.classList.contains('collapsed');
-    const hasOpenTabs = folderElement.classList.contains('has-open-tabs');
-    folderIcon.innerHTML = isCollapsed
-        ? (hasOpenTabs ? FOLDER_CLOSED_DOTS_ICON : FOLDER_CLOSED_ICON)
-        : FOLDER_OPEN_ICON;
+    folderIcon.innerHTML = folderGlyphSvg({
+        open: !folderElement.classList.contains('collapsed'),
+        hasOpenTabs: folderElement.classList.contains('has-open-tabs'),
+        icon: customIcons[folderIconKey(folderElement.dataset.bookmarkId)] || null
+    });
 }
 
 // Arc-like: when a folder is collapsed, show open bookmark tabs (active Chrome tabs) for that folder.
@@ -2987,6 +3000,29 @@ function showSplitName(row, name) {
     }, { capture: true });
 }
 
+function applyTabCustomIcon(tabElement, favicon) {
+    const url = tabElement.dataset.pinnedUrl || tabElement.dataset.url;
+    const icon = url && customIcons[tabIconKey(url)];
+    const element = icon && createCustomIconElement(icon);
+    if (!element) return;
+    // The favicon stays, hidden, for live updates and its back-to-pinned-URL button.
+    favicon.classList.add('replaced');
+    element.addEventListener('click', event => {
+        if (!favicon.classList.contains('pinned-back')) return;
+        event.stopPropagation();
+        favicon.click();
+    });
+    favicon.after(element);
+}
+
+function changeTabIcon(tabElement, x, y) {
+    const key = tabIconKey(tabElement.dataset.pinnedUrl || tabElement.dataset.url);
+    showIconPicker({
+        x, y, title: 'Change favorite icon', resetLabel: 'Use site icon', current: customIcons[key],
+        onPick: icon => setCustomIcon(key, icon)
+    });
+}
+
 // The row that stands for a split pair, or null when row isn't shown beside its partner.
 function splitLeftRowOf(row) {
     if (row.classList.contains('split-right')) return row.previousElementSibling;
@@ -3455,6 +3491,8 @@ async function createTabElement(tab, isPinned = false, isBookmarkOnly = false) {
         if (bookmarkIdForTab) tabElement.dataset.bookmarkId = bookmarkIdForTab;
     }
 
+    if (isPinned || isBookmarkOnly) applyTabCustomIcon(tabElement, favicon);
+
     // Set up favicon
     favicon.src = Utils.getFaviconUrl(tab.url);
     favicon.classList.add('tab-favicon');
@@ -3902,7 +3940,8 @@ async function createTabElement(tab, isPinned = false, isBookmarkOnly = false) {
                 close: closeSelectedTabs,
                 clearSelection: clearTabSelection
             } : null,
-            splitActions
+            splitActions,
+            isPinned || isBookmarkOnly ? () => changeTabIcon(tabElement, e.clientX, e.clientY) : null
         );
     });
 
@@ -4611,6 +4650,23 @@ function setupFolderContextMenu(folderElement, space, item = null) {
                 }
             });
             contextMenu.appendChild(moveOption);
+        }
+
+        if (folderId) {
+            const iconOption = document.createElement('button');
+            iconOption.type = 'button';
+            iconOption.setAttribute('role', 'menuitem');
+            iconOption.classList.add('context-menu-item');
+            iconOption.textContent = 'Change Icon…';
+            iconOption.addEventListener('click', () => {
+                removeContextMenu();
+                const key = folderIconKey(folderId);
+                showIconPicker({
+                    x: e.clientX, y: e.clientY, title: 'Change folder icon', resetLabel: 'Use folder icon',
+                    current: customIcons[key], onPick: icon => setCustomIcon(key, icon)
+                });
+            });
+            contextMenu.appendChild(iconOption);
         }
 
         const canCreateNestedFolder = Boolean(folderId) && await canCreateFolder(spaceFolder.id, folderId);
