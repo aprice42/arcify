@@ -52,7 +52,8 @@ import {
     showDropIndicator,
     getDropPosition,
     handleEmptyContainerDrop,
-    showUndoToast
+    showUndoToast,
+    closeContextMenus
 } from './domManager.js';
 import { BookmarkUtils } from './bookmark-utils.js';
 import { Logger } from './logger.js';
@@ -4628,6 +4629,7 @@ function setupFolderContextMenu(folderElement, space, item = null) {
         });
 
         contextMenu.appendChild(deleteOption);
+        closeContextMenus();
         document.body.appendChild(contextMenu);
 
         const menuRect = contextMenu.getBoundingClientRect();
