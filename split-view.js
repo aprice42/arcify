@@ -94,7 +94,7 @@ export function namedSplitFolderTitle(name, leftTitle, rightTitle) {
 }
 
 // Unpinned splits have no bookmark, so their names last for the browser session, keyed by splitViewId.
-const LIVE_SPLIT_NAMES_KEY = 'splitNamesByViewId';
+export const LIVE_SPLIT_NAMES_KEY = 'splitNamesByViewId';
 
 export async function getLiveSplitNames(storage = globalThis.chrome.storage.session) {
     return (await storage.get(LIVE_SPLIT_NAMES_KEY))[LIVE_SPLIT_NAMES_KEY] || {};

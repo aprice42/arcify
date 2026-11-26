@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { duplicateTab } from '../../tab-duplicate.js';
-import { isInSplit } from '../../split-view.js';
+import { isInSplit, getLiveSplitNames, setLiveSplitName } from '../../split-view.js';
 
 function setup({ copyOwner = 'a', copyPinned = false } = {}) {
     const spaces = [
@@ -83,12 +83,14 @@ function splitStrip() {
         }
     };
     const dispatch = async () => [{ id: 'a', spaceBookmarks: [], temporaryTabs: tabs.map(tab => tab.id) }];
-    return { tabs, api, dispatch };
+    const data = {};
+    const storage = { get: async key => ({ [key]: structuredClone(data[key]) }), set: async values => Object.assign(data, structuredClone(values)) };
+    return { tabs, api, dispatch, storage };
 }
 
 test('duplicating either half of a split duplicates the split as a new split', async () => {
-    const { tabs, api, dispatch } = splitStrip();
-    const copies = await duplicateTab(2, dispatch, api);
+    const { tabs, api, dispatch, storage } = splitStrip();
+    const copies = await duplicateTab(2, dispatch, api, storage);
     const byId = id => tabs.find(tab => tab.id === id);
     assert.equal(copies.length, 2);
     assert.ok(isInSplit(byId(copies[0].id)));
@@ -98,8 +100,8 @@ test('duplicating either half of a split duplicates the split as a new split', a
 });
 
 test('the original split survives a copy landing between its halves', async () => {
-    const { tabs, api, dispatch } = splitStrip();
-    await duplicateTab(1, dispatch, api);
+    const { tabs, api, dispatch, storage } = splitStrip();
+    await duplicateTab(1, dispatch, api, storage);
     const [left, right] = [tabs.find(tab => tab.id === 1), tabs.find(tab => tab.id === 2)];
     assert.ok(isInSplit(left));
     assert.equal(left.splitViewId, right.splitViewId);
@@ -107,14 +109,25 @@ test('the original split survives a copy landing between its halves', async () =
 });
 
 test('the original split is re-paired even when copying the second half fails', async () => {
-    const { tabs, api, dispatch } = splitStrip();
+    const { tabs, api, dispatch, storage } = splitStrip();
     const duplicate = api.duplicate;
     api.duplicate = async id => {
         if (id === 2) throw new Error('tab closed');
         return duplicate(id);
     };
-    await assert.rejects(duplicateTab(1, dispatch, api), /tab closed/);
+    await assert.rejects(duplicateTab(1, dispatch, api, storage), /tab closed/);
     const [left, right] = [tabs.find(tab => tab.id === 1), tabs.find(tab => tab.id === 2)];
     assert.ok(isInSplit(left));
     assert.equal(left.splitViewId, right.splitViewId);
+});
+
+test('a named split keeps its name when its halves are re-paired, and the copy starts unnamed', async () => {
+    const { tabs, api, dispatch, storage } = splitStrip();
+    await setLiveSplitName(5, 'Research', storage);
+    const copies = await duplicateTab(1, dispatch, api, storage);
+    const names = await getLiveSplitNames(storage);
+    const splitOf = id => tabs.find(tab => tab.id === id).splitViewId;
+    assert.notEqual(splitOf(1), 5);
+    assert.deepEqual(names, { [splitOf(1)]: 'Research' });
+    assert.equal(names[splitOf(copies[0].id)], undefined);
 });

@@ -295,6 +295,34 @@ test('a split renamed as a whole shows one row, keeps its name when pinned, and 
     expect(await folderTitle()).toBe('⧉ Page /name-left | Page /name-right');
 });
 
+test('duplicating a named split keeps the original\'s name and leaves the copy unnamed', async () => {
+    const [left, right] = await openTabs('/dup-left', '/dup-right');
+    await page.evaluate(ids => chrome.tabs.createSplit(ids), [left, right]);
+    await page.waitForSelector(`${row(left)}.split-left`);
+    await menu(right, 'Rename Split View');
+    await page.waitForSelector('.split-name-input');
+    await page.focus('.split-name-input');
+    await page.keyboard.type('Research');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector(`${row(left)}.split-named`);
+
+    await menu(left, 'Duplicate Split View');
+    const copies = await page.waitForFunction(async ([left, right]) => {
+        const tabs = await chrome.tabs.query({ currentWindow: true });
+        const copies = tabs.filter(tab => [left, right].every(id => id !== tab.id) && /\/dup-(left|right)$/.test(tab.url || tab.pendingUrl));
+        return copies.length === 2 && copies.map(tab => tab.id);
+    }, { polling: 100 }, [left, right]).then(handle => handle.jsonValue());
+    await page.waitForFunction(async ids => {
+        const tabs = await Promise.all(ids.map(id => chrome.tabs.get(id)));
+        return tabs[0].splitViewId !== -1 && tabs[0].splitViewId === tabs[1].splitViewId;
+    }, { polling: 100 }, copies);
+    expect(isPaired(await splitIds([left, right]))).toBe(true);
+    await page.waitForFunction(selector => document.querySelector(selector)?.textContent === 'Research',
+        { polling: 100 }, `${row(left)}.split-named .tab-split-name`);
+    await page.waitForSelector(`${row(copies[0])}.split-left`);
+    expect(await page.$$eval(`${row(copies[0])}.split-named, ${row(copies[1])}.split-named`, els => els.length)).toBe(0);
+});
+
 test('the Rename shortcut edits the active tab, or its whole split', async () => {
     const [single, left, right] = await openTabs('/rename-single', '/rename-left', '/rename-right');
     await page.evaluate(ids => chrome.tabs.createSplit(ids), [left, right]);

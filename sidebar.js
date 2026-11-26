@@ -25,7 +25,7 @@ import { ownerOf } from './space-store.js';
 import { SPLIT_JOIN_KEY } from './split-from-favorite.js';
 import {
     isInSplit, pairSplits, splitRowRoles, canCreateSplit, isSplitFolder, splitFolderTitle, ensureSplit,
-    splitFolderName, namedSplitFolderTitle, getLiveSplitNames, setLiveSplitName
+    splitFolderName, namedSplitFolderTitle, getLiveSplitNames, setLiveSplitName, LIVE_SPLIT_NAMES_KEY
 } from './split-view.js';
 import { canCreateFolder, canMoveFolder, createFolder } from './folder-policy.js';
 import { loadFolderCollapsed, saveFolderCollapsed } from './folder-state.js';
@@ -835,6 +835,8 @@ async function initSidebar() {
     sidebarReady = true;
     refreshCoordinator.schedule();
     chrome.storage.onChanged.addListener((changes, area) => {
+        // The background moves a split's name when Duplicate re-pairs its halves.
+        if (area === 'session' && changes[LIVE_SPLIT_NAMES_KEY] && sidebarReady) refreshCoordinator.invalidateView();
         if (area !== 'local' || !sidebarReady) return;
         if (changes.spaces) scheduleStoredSpacesRefresh();
         if (changes[CUSTOM_ICONS_KEY]) {
